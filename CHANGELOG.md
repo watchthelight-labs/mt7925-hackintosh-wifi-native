@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.8 (2026-10-18)
+
+- Beacon-counter events are posted while the core holds the link, not only while its scan cache entry for the access point is fresh (the firmware keeps the associated AP's beacons to itself on some channels, and the Family raised BeaconLoss again).
+
 ## 0.4.7 (2026-10-18)
 
 - Beacon-counter events (0xaf, u32 count at +0x54) once a second while the link is up. Without them the Family raises the fault "missed beacons timeout" about 60 s after every join and leaves the network. Under test.

@@ -17,7 +17,7 @@ Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 
 
 | Version | What it does | Result |
 |---|---|---|
-| 0.4.7 | beacon-counter events once a second for the Family's missed-beacons check | being tested: 0.4.6 still lost the link about 60 s after every join to the Family's "missed beacons timeout" fault |
+| 0.4.8 | beacon-counter events once a second while the core holds the link, for the Family's missed-beacons check | being tested: 0.4.6 lost the link about 60 s after every join to the Family's "missed beacons timeout" fault; 0.4.7 fixed it except on channels where its cache-age gate starved |
 | 0.4.6 | the join lands on the access point macOS chose (the candidate BSSID at +0x21c) | confirmed; 0.4.4 and 0.4.5 left and re-joined every 15 to 60 s because the core joined its own favourite BSS |
 | 0.4.4 | CoreCapture pipes started after the core binding (an earlier order lost the core's 15 s front-end race) | macOS joined the network by itself at boot, lease, real default route, internet for apps |
 | 0.4.3 | CoreCapture data pipe and stream started (a completed fault report panicked in `CCDataPipe::enqueueBlob` on an unstarted pipe) | no panic |

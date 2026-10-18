@@ -568,20 +568,22 @@ void MtkWlanNativeIf::serviceJoin() {
         // "missed beacons timeout" about 60 s after every join and leaves the network (N-147). The core refreshes the BSS
         // cache entry on every beacon or probe response it hears, so the entry's age says whether the AP is still heard.
         IOLockLock(lock);
-        bool up = nmLinkUp;
+        bool up = nmLinkUp && radioUp;                                                 // the core still has the association
         uint8_t curBssid[6];
         memcpy(curBssid, nmBssid, 6);
         IOLockUnlock(lock);
         if (up && (reannouncePolls % 100) == 0 && coreLoop && curBss) {                // once a second
+            // N-148: gating this on the cache entry's age starved on a channel the core only refreshes during scans (the
+            // firmware keeps beacons of the associated AP to itself), and the Family raised BeaconLoss again. The core's
+            // own link state is the truth here: it drops the link when the AP goes away, and that reaches the Family as 0xd8.
             bool found = false;
-            if (coreLoop->runAction(gatedFindBss, this, curBssid, &found) == kIOReturnSuccess && found && curBss->age_ms < 3000) {
-                uint8_t m[0x58];
-                bzero(m, sizeof(m));
-                uint32_t interval = curBss->beacon_interval ? curBss->beacon_interval : 100;
-                store<uint32_t>(m, 0x54, (1000u * 1000u / 1024u) / interval + 1);     // beacons in the last second, at least 1
-                postEvent(kEventBeaconCounter, m, sizeof(m));
-                beaconReports++;
-            }
+            if (coreLoop->runAction(gatedFindBss, this, curBssid, &found) != kIOReturnSuccess) found = false;
+            uint8_t m[0x58];
+            bzero(m, sizeof(m));
+            uint32_t interval = (found && curBss->beacon_interval) ? curBss->beacon_interval : 100;
+            store<uint32_t>(m, 0x54, (1000u * 1000u / 1024u) / interval + 1);         // beacons in the last second, at least 1
+            postEvent(kEventBeaconCounter, m, sizeof(m));
+            beaconReports++;
         }
         IOLockLock(lock);
         bool want = nmEverJoined && radioUp && !nmLinkUp && !linkDownPending;
