@@ -153,3 +153,11 @@ older than 60001 ms; the first call reports the CoreCapture fault "missed beacon
 timestamps are refreshed only by `handleLqmUpdate`, event 0x27 with exactly 0x1dc bytes (see the comment in
 MtkWlanNativeReq.cpp for the fields). The beacon counter 0xaf feeds a different counter. 0.4.9 posts 0x27 once a second
 next to 0xaf: valid flag, RSSI, a growing counter pair at +0x14/+0x1c, frames received at +0x24, beacons at +0x28.
+
+## 0.4.9 proven (N-150): stage E done
+
+Ten quiet minutes on N-150: one join, zero leaves, zero link drops, one 0x27 and one 0xaf per second, lease, unscoped
+default route, internet. Released as 0.4.9 (latest) on mt7925-hackintosh-wifi-native; OCEFI promoted to the USB stick.
+Left for later: `MtkNativeJoin` is refreshed only on a join (beaconreports shows 0 between joins), `MtkNativeInterface`
+on the controller stays No, Country Code XZ, WPA2-PSK through the menu untested on air, no roaming (the Family asks for
+one AP and gets it), sleep, AWDL.

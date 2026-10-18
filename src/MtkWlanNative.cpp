@@ -4,7 +4,7 @@
 // ga403wm-hackintosh kexts/itlmt7925Native/itlmt7925_wifi.cpp (BSD-3-Clause-Clear, Copyright (c) 2026 thanhnndev and
 // contributors); every offset was re-read in the 25G241 dump (the kcabi dump of 25G241) before use.
 #include "MtkWlanNative.hpp"
-#define MTK_NATIVE_VERSION "0.4.9"   // also Info.plist (build-mac.sh checks they match)
+#define MTK_NATIVE_VERSION "0.4.10"   // also Info.plist (build-mac.sh checks they match)
 #include "MtkWlanNativeIf.hpp"
 #include "MtkNativeAbi.hpp"
 #include "MtkNativeTrace.hpp"
@@ -72,7 +72,18 @@ IOService *MtkWlanNative::probe(IOService *provider, SInt32 *score) {
         provider->callPlatformFunction(MTK_CORE_FE_DECLINED, false, (void *)why, nullptr, nullptr, nullptr);
         return nullptr;
     }
+    // 0.4.10: claim the core now, before Apple's interface start can take longer than the core's 15 s fallback (N-161:
+    // 17.2 s in IO80211SkywalkInterface start, the Ethernet front end won by 230 ms). Every give-up in start() declines.
+    provider->callPlatformFunction(MTK_CORE_FE_CLAIM, false, nullptr, nullptr, nullptr, nullptr);
     return this;
+}
+
+// A claimed front end that gives up tells the core at once, so the Ethernet front end starts without waiting out the
+// claim window. Safe to call more than once and after the fallback already ran.
+void MtkWlanNative::declineCore(IOService *provider, const char *why) {
+    if (!provider) return;
+    provider->setProperty("MtkNativeDeclined", why);
+    provider->callPlatformFunction(MTK_CORE_FE_DECLINED, false, (void *)why, nullptr, nullptr, nullptr);
 }
 
 // ---- CoreCapture objects IO80211Controller::start needs -----------------------------------------------------------------
@@ -166,23 +177,26 @@ bool MtkWlanNative::start(IOService *provider) {
     if (!ops && (!provider || provider->callPlatformFunction(MTK_CORE_OPS_V3, false, (void *)&ops, &core, nullptr, nullptr) != kIOReturnSuccess ||
                  !ops || !core || ops->v2.v1.version != MTK_CORE_API_V3 || ops->v2.v1.size < sizeof(mtk_core_ops_v3))) {
         nativeTrace(this, "ctl:no core ops v3");
+        declineCore(provider, "no core ops v3");
         return false;
     }
     nativeTrace(this, "ctl:core ops v%u", ops4 ? 4u : 3u);
     if (ops->v2.v1.get_mac(core, mac) != 0) {
         nativeTrace(this, "ctl:no station address");
+        declineCore(provider, "no station address");
         return false;
     }
     provLoop = provider->getWorkLoop();
     if (provLoop) provLoop->retain();
-    if (!createWorkQueue()) { nativeTrace(this, "ctl:no work queue"); return false; }
+    if (!createWorkQueue()) { nativeTrace(this, "ctl:no work queue"); declineCore(provider, "no work queue"); return false; }
     nativeTrace(this, "ctl:work queue ok");
-    if (!makeLogger(provider)) { nativeTrace(this, "ctl:no logger"); return false; }
+    if (!makeLogger(provider)) { nativeTrace(this, "ctl:no logger"); declineCore(provider, "no logger"); return false; }
     nativeTrace(this, "ctl:logger ok");
-    if (!makeFaultReporter(provider)) { nativeTrace(this, "ctl:no fault reporter"); return false; }
+    if (!makeFaultReporter(provider)) { nativeTrace(this, "ctl:no fault reporter"); declineCore(provider, "no fault reporter"); return false; }
     nativeTrace(this, "ctl:fault reporter ok; base start begin");
     if (!super::start(provider)) {
         nativeTrace(this, "ctl:IO80211Controller::start failed");
+        declineCore(provider, "IO80211Controller::start failed");
         return false;
     }
     started = true;
@@ -203,9 +217,21 @@ bool MtkWlanNative::start(IOService *provider) {
     PE_parse_boot_argn("mtknativeif", &wantIf, sizeof(wantIf));
     if (!mediaOK || !wantIf) {
         nativeTrace(this, "ctl:controller only (%s)", mediaOK ? "no interface requested" : "no media dictionary");
+        declineCore(provider, mediaOK ? "controller only, no interface requested" : "controller only, no media dictionary");
         return true;
     }
-    if (!makeInterface()) nativeTrace(this, "ctl:interface failed, controller stays up");
+    // debug only: mtknativedelay=<ms> holds the interface start back, to prove the claim covers a slow Apple start
+    uint32_t delayMs = 0;
+    PE_parse_boot_argn("mtknativedelay", &delayMs, sizeof(delayMs));
+    if (delayMs) {
+        if (delayMs > 60000) delayMs = 60000;
+        nativeTrace(this, "ctl:delay %u ms", delayMs);
+        IOSleep(delayMs);
+    }
+    if (!makeInterface()) {
+        nativeTrace(this, "ctl:interface failed, controller stays up");
+        declineCore(provider, "interface start failed");
+    }
     return true;
 }
 

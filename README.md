@@ -35,7 +35,7 @@ is ranked "Never" until you log in, exactly as on a real Mac.
 
 ## Requirements
 
-- MtkWlan 0.11.0 or later installed and working with its Ethernet front end first (core ops table v4).
+- MtkWlan 0.11.1 or later (0.11.0 works but can lose the start-up race, see the changelog) installed and working with its Ethernet front end first (core ops table v4).
 - macOS 26.7.1 build 25G241. The kext is built against that build's class layouts and vtable slots and **refuses to
   load on any other build** (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
   see "Building".
@@ -46,8 +46,9 @@ is ranked "Never" until you log in, exactly as on a real Mac.
    MtkWlan (it links against MtkWlan's core).
 2. Add `mtkfe=native mtknativeif=1` to `boot-args`. Without them MtkWlan keeps its Ethernet front end and this kext
    stays a controller without an interface (safe to leave installed).
-3. Reboot. The Wi-Fi menu appears; join your network from it. If the native front end does not register within 15 s
-   the core falls back to the Ethernet front end by itself, so a broken build still leaves you with network.
+3. Reboot. The Wi-Fi menu appears; join your network from it. If the native front end declines, or claims the core
+   and still has not registered after 90 s (15 s with MtkWlan before 0.11.1), the core falls back to the Ethernet front
+   end by itself, so a broken build still leaves you with network.
 
 If the network interface for the card was created while it was an Ethernet port, its service in System Settings may
 still be of type Ethernet ("Network Service Inactive" in the Wi-Fi system profile). Remove that service and let macOS

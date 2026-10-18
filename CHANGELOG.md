@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.10 (2026-10-18)
+
+- Claims the core at the end of `probe()` (`MTK_CORE_FE_CLAIM`, MtkWlan 0.11.1), before Apple's interface start can outlast the core's 15 s fallback. Before this, a slow `IO80211SkywalkInterface` start (17.2 s on one boot) let the Ethernet front end win by 230 ms and the Wi-Fi menu stayed empty until the next reboot. Every place `start()` gives up now declines, so the fallback still comes at once when the front end really cannot run.
+- Debug boot-arg `mtknativedelay=<ms>` (at most 60000) holds the interface start back, to test the late path.
+
 ## 0.4.9 (2026-10-18)
 
 - Link quality update events (0x27, 0x1dc bytes) once a second while the link is up. The Family's assoc timer declares "missed beacons" when its beacon and traffic timestamps are both older than 60 s, and only this event refreshes them; the beacon counter of 0.4.7 feeds a different counter. Proven on the author's laptop: ten quiet minutes without a leave.

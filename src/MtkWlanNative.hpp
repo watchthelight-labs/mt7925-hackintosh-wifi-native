@@ -28,6 +28,7 @@ class MtkWlanNative : public IO80211Controller {
 public:
     IOService *probe(IOService *provider, SInt32 *score) override;
     bool start(IOService *provider) override;
+    void declineCore(IOService *provider, const char *why);   // MTK_CORE_FE_DECLINED after a claim (0.4.10)
     void stop(IOService *provider) override;
     void free() override;
     IOReturn selectMedium(const IONetworkMedium *medium) override;
