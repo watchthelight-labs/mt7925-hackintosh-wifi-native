@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.11 (2026-10-18)
+
+- Tx queues restart on the next 2 ms tick after the core frees a slot. They used to wait for the 10 ms control poll, which capped upload near 190 Mbit/s. Frames refused while the link was down are asked for again when it comes up.
+- Tx completion moves the pending list once per tick instead of once per packet.
+- Measured on the author's laptop with MtkWlan 0.11.3: about 410 Mbit/s of local UDP on VHT 80 MHz 2x2, gateway ping 3-4 ms (5 ms before).
+
 ## 0.4.10 (2026-10-18)
 
 - Claims the core at the end of `probe()` (`MTK_CORE_FE_CLAIM`, MtkWlan 0.11.1), before Apple's interface start can outlast the core's 15 s fallback. Before this, a slow `IO80211SkywalkInterface` start (17.2 s on one boot) let the Ethernet front end win by 230 ms and the Wi-Fi menu stayed empty until the next reboot. Every place `start()` gives up now declines, so the fallback still comes at once when the front end really cannot run.

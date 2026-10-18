@@ -76,6 +76,7 @@ private:
     void drainRx();
     void completeTx();
     void pollControl();
+    void restartTx();
     bool linkUp() const;
     // core callbacks (core gate held: flag and copy only)
     static mbuf_t cbRxAlloc(void *ctx, uint32_t len);
@@ -164,7 +165,7 @@ private:
     uint16_t headroom = 0;
     bool bound = false, dpEnabled = false;
     // flagged from the core gate, applied from the tick
-    bool radioUp = false, linkDirty = false, txSpace = false, scanDone = false, joinDone = false;
+    bool radioUp = false, linkDirty = false, txSpace = false, txPendingFull = false, scanDone = false, joinDone = false;
     uint64_t radioSpeed = 0;
     int scanStatus = 0, joinResult = 0;
     uint32_t scanCount = 0;

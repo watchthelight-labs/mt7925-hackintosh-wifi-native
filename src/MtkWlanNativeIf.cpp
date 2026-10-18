@@ -455,6 +455,7 @@ uint32_t MtkWlanNativeIf::submitPackets(IOSkywalkPacket *const *packets, uint32_
     IOLockUnlock(lock);
     if (!up) { txStalled++; return 0; }
     uint32_t n = 0;
+    if (pendingCount + 1 > 512) { txPendingFull = true; return 0; }
     for (; n < count && n < kTxBatch && pendingCount + n < 512; n++) {
         IOSkywalkPacket *p = packets[n];
         TxItem &t = txBatch[n];
@@ -481,15 +482,34 @@ uint32_t MtkWlanNativeIf::submitPackets(IOSkywalkPacket *const *packets, uint32_
         if (t.result == MTK_TX_OK) txSent++; else txDropped++;
         pendingTx[pendingCount++] = packets[used];     // completed on the next tick, after the queue recorded the consumption
     }
+    if (used == n && n < count && pendingCount >= 512) txPendingFull = true;
     return used;
 }
 
+// 0.4.11: one shift at the end instead of a memmove per packet
 void MtkWlanNativeIf::completeTx() {
-    while (pendingCount && txComp) {
-        if (txComp->enqueuePackets(pendingTx, 1, 0) != kIOReturnSuccess) break;
-        memmove(pendingTx, pendingTx + 1, (--pendingCount) * sizeof(pendingTx[0]));
-        txCompleted++;
+    uint32_t done = 0;
+    while (done < pendingCount && txComp) {
+        if (txComp->enqueuePackets(&pendingTx[done], 1, 0) != kIOReturnSuccess) break;
+        done++;
     }
+    if (!done) return;
+    pendingCount -= done;
+    if (pendingCount) memmove(pendingTx, pendingTx + done, pendingCount * sizeof(pendingTx[0]));
+    txCompleted += done;
+}
+
+// 0.4.11: the Tx queues restart on the tick after the core frees a slot (or completions free pending room), not on the
+// 10 ms control poll; the 10 ms wait capped upload near 190 Mbit/s (128 frames per poll)
+void MtkWlanNativeIf::restartTx() {
+    bool space;
+    IOLockLock(lock);
+    space = txSpace;
+    txSpace = false;
+    IOLockUnlock(lock);
+    if (txPendingFull && pendingCount < 512 - kTxBatch) { txPendingFull = false; space = true; }
+    if (space && dpEnabled)
+        for (uint32_t i = 0; i < kNumTx; i++) txSub[i]->requestDequeue(nullptr, 1);
 }
 
 // Ring -> pool packets -> Rx completion queue. Allocation acquires a handle; prepareWithQueue materialises the buffer for the
@@ -559,15 +579,14 @@ bool MtkWlanNativeIf::linkUp() const {
 // Every 10 ms on the work queue: apply what the core flagged. The link state reaches the Family here (setLinkState) and the
 // BSD layer through the controller's setLinkStatus. Scan and join events are stage C / D work (MtkWlanNativeReq.cpp).
 void MtkWlanNativeIf::pollControl() {
-    bool dirty, up, space;
+    bool dirty, up;
     uint64_t speed;
     IOLockLock(lock);
     dirty = linkDirty;
     linkDirty = false;
     up = radioUp;
     speed = radioSpeed;
-    space = txSpace;
-    txSpace = false;
+    if (dirty && up) txSpace = true;     // frames refused while the link was down are asked for again
     IOLockUnlock(lock);
     if (dirty && ctl) {
         ctl->setLinkStatus(kIONetworkLinkValid | (up ? kIONetworkLinkActive : 0), up ? ctl->getSelectedMedium() : nullptr, up ? speed : 0);
@@ -575,8 +594,6 @@ void MtkWlanNativeIf::pollControl() {
         nativeTrace(ctl, "dp:link=%u family=%u state=%u", up, ok, IO80211InfraInterface::linkState());
         setProperty("MtkNativeRadioLink", up);
     }
-    if (space && dpEnabled)
-        for (uint32_t i = 0; i < kNumTx; i++) txSub[i]->requestDequeue(nullptr, 1);
 }
 
 void MtkWlanNativeIf::tick(OSObject *owner, IOTimerEventSource *) {
@@ -585,6 +602,7 @@ void MtkWlanNativeIf::tick(OSObject *owner, IOTimerEventSource *) {
     i->completeTx();
     if (i->dpEnabled) i->drainRx();
     if ((++i->ticks % (10 / kTickMs)) == 0) i->pollControl();
+    i->restartTx();
     if ((i->ticks % 250) == 0) i->followAddress();   // twice a second: the BSD address the core must answer to
     if ((i->ticks % (10 / kTickMs)) == 0) i->serviceScan();
     if ((i->ticks % (10 / kTickMs)) == 0) i->serviceJoin();
