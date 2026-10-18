@@ -1,4 +1,4 @@
-# <wtl> project: legion-hackintosh | file: native/tools/kcabi/functions-extra.txt | author: watchthelight </wtl>
+# <wtl> project: mtkwlannative | file: tools/kcabi/functions-extra.txt | author: watchthelight </wtl>
 # Extra functions dumped by dump.py beyond the reference list (one mangled name per line; a trailing * is a prefix).
 # These are the IO80211Family internals the itlmt7925Native join / link / scan path was debugged against on 24H32
 # (ga403wm docs/TEST-NATIVE-WIFI.md rounds 15-23). Dump them on every build so their payload offsets can be diffed.
