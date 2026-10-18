@@ -302,6 +302,7 @@ void MtkWlanNativeIf::deliverScanResults() {
 // contributors), re-checked against the 25G241 handlers.
 namespace {
 const uint32_t kEventAssoc = 0x4e, kEventJoin = 0xd3, kEventFirstBeacon = 0xd4, kEventConnect = 0xd5, kEventLinkStatus = 0xd8;
+const uint32_t kEventBeaconCounter = 0xaf;   // WCLNetManager::updateBeaconCounter: u32 beacons since the last report at +0x54
 }
 
 IOReturn MtkWlanNativeIf::gatedJoin(OSObject *owner, void *params, void *rc, void *, void *) {
@@ -365,17 +366,17 @@ IOReturn MtkWlanNativeIf::setWCL_ASSOCIATE(apple80211AssocCandidates *d) {
     else if (cipher >= 6 && cipher <= 9 && keyLen == 32) { p.key_type = MTK_KEY_PMK; memcpy(p.pmk, b + 0x50, 32); }
     else return kIOReturnUnsupported;                                             // WEP, SAE, enterprise: not offered
     // The candidate list (WCLJoinRequest::fillAssocCandidatesList / addAssocCandidates on 25G241): u32 count at +0x214,
-    // entries of 18 bytes from +0x21c (channel +0, BSSID +6, u16 rssi +12). The Family picks the BSS; a join that ignores
-    // it lands on the core's own favourite and the Family re-joins forever (N-145: it wanted channels 52, 11, 108 in turn
-    // while the core sat on 52). The first candidate is the one it wants now.
+    // entries of 18 bytes from +0x21c, the BSSID first (N-146 traced the associated AP's address there),
+    // then the channel and a u16. The Family picks the BSS; a join that ignores it lands on the core's own favourite and
+    // the Family re-joins forever (N-145: it wanted channels 52, 11, 108 in turn while the core sat on 52).
     uint32_t nCand = load<uint32_t>(b, 0x214);
     if (nCand >= 1) {
-        memcpy(p.bssid, b + 0x222, 6);
+        memcpy(p.bssid, b + 0x21c, 6);
         if ((p.bssid[0] & 1) || !(p.bssid[0] | p.bssid[1] | p.bssid[2] | p.bssid[3] | p.bssid[4] | p.bssid[5])) bzero(p.bssid, 6);
     }
-    if (assocTraced < 8) nativeTrace(ctl, "assoc:candidates %u first bssid %02x:%02x:%02x:%02x:%02x:%02x chan bytes %02x%02x%02x%02x%02x%02x rssi %d",
+    if (assocTraced < 8) nativeTrace(ctl, "assoc:candidates %u bssid %02x:%02x:%02x:%02x:%02x:%02x rest %02x%02x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x",
                                      nCand, p.bssid[0], p.bssid[1], p.bssid[2], p.bssid[3], p.bssid[4], p.bssid[5],
-                                     b[0x21c], b[0x21d], b[0x21e], b[0x21f], b[0x220], b[0x221], (int)(int16_t)load<uint16_t>(b, 0x228));
+                                     b[0x222], b[0x223], b[0x224], b[0x225], b[0x226], b[0x227], b[0x228], b[0x229], b[0x22a], b[0x22b], b[0x22c], b[0x22d]);
     int rc = -2;
     if (coreLoop->runAction(gatedJoin, this, &p, &rc) != kIOReturnSuccess) rc = -2;
     bzero(&p, sizeof(p));
@@ -541,7 +542,7 @@ void MtkWlanNativeIf::finishJoin(bool ok, const uint8_t bssid[6]) {
         joinsOk++;
     } else joinsFailed++;
     char s[112];
-    snprintf(s, sizeof(s), "requests %u ok %u failed %u leaves %u linkdowns %u linkup %u", joinsRequested, joinsOk, joinsFailed, leaves, linkDowns, nmLinkUp);
+    snprintf(s, sizeof(s), "requests %u ok %u failed %u leaves %u linkdowns %u linkup %u beaconreports %u", joinsRequested, joinsOk, joinsFailed, leaves, linkDowns, nmLinkUp, beaconReports);
     setProperty("MtkNativeJoin", s);
     if (assocTraced++ < 16) nativeTrace(ctl, "assoc:result ok=%u", ok);
 }
@@ -562,6 +563,26 @@ void MtkWlanNativeIf::serviceJoin() {
     if (down) postLinkStatus(downBssid, false, 1);
     if (!active) {
         if ((++reannouncePolls % 50) != 0) return;                                 // every 500 ms
+        // The Family's net manager wants to hear that beacons keep arriving: WCLNetManager::updateBeaconCounter (event 0xaf,
+        // u32 count at +0x54) sets a flag its missed-beacons check clears; without the event it raises the fault
+        // "missed beacons timeout" about 60 s after every join and leaves the network (N-147). The core refreshes the BSS
+        // cache entry on every beacon or probe response it hears, so the entry's age says whether the AP is still heard.
+        IOLockLock(lock);
+        bool up = nmLinkUp;
+        uint8_t curBssid[6];
+        memcpy(curBssid, nmBssid, 6);
+        IOLockUnlock(lock);
+        if (up && (reannouncePolls % 100) == 0 && coreLoop && curBss) {                // once a second
+            bool found = false;
+            if (coreLoop->runAction(gatedFindBss, this, curBssid, &found) == kIOReturnSuccess && found && curBss->age_ms < 3000) {
+                uint8_t m[0x58];
+                bzero(m, sizeof(m));
+                uint32_t interval = curBss->beacon_interval ? curBss->beacon_interval : 100;
+                store<uint32_t>(m, 0x54, (1000u * 1000u / 1024u) / interval + 1);     // beacons in the last second, at least 1
+                postEvent(kEventBeaconCounter, m, sizeof(m));
+                beaconReports++;
+            }
+        }
         IOLockLock(lock);
         bool want = nmEverJoined && radioUp && !nmLinkUp && !linkDownPending;
         IOLockUnlock(lock);

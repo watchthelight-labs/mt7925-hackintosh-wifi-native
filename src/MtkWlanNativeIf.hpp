@@ -129,6 +129,7 @@ private:
     uint8_t wantSsid[32] = {};
     uint32_t joinPolls = 0, reannouncePolls = 0;
     uint32_t joinsRequested = 0, joinsOk = 0, joinsFailed = 0, leaves = 0, linkDowns = 0;
+    uint32_t beaconReports = 0;              // 0xaf events posted (the Family's missed-beacons check)
     uint32_t assocTraced = 0, linkStatusTraced = 0, linkStateTraced = 0, bssInfoTraced = 0, extBssTraced = 0, miscTraced = 0;
     struct mtk_status *statusBuf = nullptr;  // filled under the core gate by gatedStatus
     struct mtk_bss_info *curBss = nullptr;   // the associated BSS, looked up in the cache by gatedFindBss

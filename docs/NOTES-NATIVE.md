@@ -133,3 +133,13 @@ re-joined every 15 to 60 s (I-067): it asked for channels 52, 11, 108 in turn an
 because `setWCL_ASSOCIATE` zeroed the BSSID. 0.4.5 reads the candidate list (`WCLJoinRequest::addAssocCandidates`:
 u32 count at +0x214, entries of 18 bytes from +0x21c, BSSID at +6, u16 rssi at +12) and passes the first candidate's
 BSSID to the core. Published as watchthelight-labs/MtkWlanNative, release 0.4.5 (pre-release until N-146).
+
+## 0.4.6 and 0.4.7 (N-147, N-148): the candidate BSSID offset, and beacons the Family wants to hear about
+
+N-146 showed the candidate's BSSID at +0x21c (0.4.5 read +0x222); 0.4.6 joins the right AP (N-147). The Family still
+left about 60 s after every join: corecapture logged the fault "missed beacons timeout", raised by
+`WCLNetManager::handleMissedBeacons` (reportFault, then `leaveNetworkCommand`; airportd records BeaconLoss). Its input
+is event 0xaf, `WCLNetManager::updateBeaconCounter`: it adds the u32 at payload +0x54 to a counter and sets a flag that
+the periodic check clears; nothing arrives, the fault fires. 0.4.7 posts 0xaf (0x58 bytes, count at +0x54) once a second
+while the link is up, as long as the core's cache entry for the associated BSS was refreshed in the last 3 s (the core
+updates it on every beacon or probe response). `MtkNativeJoin` shows `beaconreports`.
