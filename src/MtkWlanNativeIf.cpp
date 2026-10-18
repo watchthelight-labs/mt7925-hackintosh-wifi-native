@@ -59,6 +59,7 @@ bool MtkWlanNativeIf::init() {
     beaconMsg = (uint8_t *)IOMalloc(kBeaconHeader + MTK_BSS_IE_MAX);
     statusBuf = (struct mtk_status *)IOMalloc(sizeof(struct mtk_status));
     curBss = (struct mtk_bss_info *)IOMalloc(sizeof(struct mtk_bss_info));
+    lqmMsg = (uint8_t *)IOMalloc(0x1dc);
     return lock != nullptr && bssSnap != nullptr && beaconMsg != nullptr;
 }
 
@@ -232,6 +233,7 @@ void MtkWlanNativeIf::free() {
     if (beaconMsg) { IOFree(beaconMsg, kBeaconHeader + MTK_BSS_IE_MAX); beaconMsg = nullptr; }
     if (statusBuf) { IOFree(statusBuf, sizeof(struct mtk_status)); statusBuf = nullptr; }
     if (curBss) { IOFree(curBss, sizeof(struct mtk_bss_info)); curBss = nullptr; }
+    if (lqmMsg) { IOFree(lqmMsg, 0x1dc); lqmMsg = nullptr; }
     if (lock) { IOLockFree(lock); lock = nullptr; }
     super::free();
 }

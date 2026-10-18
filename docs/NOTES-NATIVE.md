@@ -143,3 +143,13 @@ is event 0xaf, `WCLNetManager::updateBeaconCounter`: it adds the u32 at payload 
 the periodic check clears; nothing arrives, the fault fires. 0.4.7 posts 0xaf (0x58 bytes, count at +0x54) once a second
 while the link is up, as long as the core's cache entry for the associated BSS was refreshed in the last 3 s (the core
 updates it on every beacon or probe response). `MtkNativeJoin` shows `beaconreports`.
+
+## 0.4.8 and 0.4.9 (N-149, N-150): what the Family's assoc timer wants
+
+0.4.8 posted the beacon counter (0xaf) while the core holds the link; N-149 still lost the link with BeaconLoss 60 s after
+each join. `WCLNetManager::assocTimerAction` (every 5 s, `setTimeoutMS(5000)`) forces a BSS info refresh every 60 s, runs
+`checkTrafficCounters` (0x1b2) and calls `handleMissedBeacons` when the net manager's timestamps +0x150 and +0x158 are both
+older than 60001 ms; the first call reports the CoreCapture fault "missed beacons timeout", the next one leaves. Both
+timestamps are refreshed only by `handleLqmUpdate`, event 0x27 with exactly 0x1dc bytes (see the comment in
+MtkWlanNativeReq.cpp for the fields). The beacon counter 0xaf feeds a different counter. 0.4.9 posts 0x27 once a second
+next to 0xaf: valid flag, RSSI, a growing counter pair at +0x14/+0x1c, frames received at +0x24, beacons at +0x28.

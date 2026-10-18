@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.9 (2026-10-18)
+
+- Link quality update events (0x27, 0x1dc bytes) once a second while the link is up. The Family's assoc timer declares "missed beacons" when its beacon and traffic timestamps are both older than 60 s, and only this event refreshes them; the beacon counter of 0.4.7 feeds a different counter. Under test.
+
 ## 0.4.8 (2026-10-18)
 
 - Beacon-counter events are posted while the core holds the link, not only while its scan cache entry for the access point is fresh (the firmware keeps the associated AP's beacons to itself on some channels, and the Family raised BeaconLoss again).

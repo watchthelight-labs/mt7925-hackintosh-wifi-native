@@ -303,6 +303,12 @@ void MtkWlanNativeIf::deliverScanResults() {
 namespace {
 const uint32_t kEventAssoc = 0x4e, kEventJoin = 0xd3, kEventFirstBeacon = 0xd4, kEventConnect = 0xd5, kEventLinkStatus = 0xd8;
 const uint32_t kEventBeaconCounter = 0xaf;   // WCLNetManager::updateBeaconCounter: u32 beacons since the last report at +0x54
+// WCLNetManager::handleLqmUpdate (event 0x27, exactly 0x1dc bytes): the Family's assoc timer declares "missed beacons" when
+// neither of two timestamps moved for 60 s. This message refreshes both: the beacon one when +0x1d8, +0x1d9 and +0x30 are
+// nonzero and the u32 beacon count at +0x28 is nonzero; the traffic one when +0x1d8, +0x1d9 are nonzero and the u32 at
+// +0x1c exceeds the one at +0x14 or the u32 at +0x24 is nonzero. +0 nonzero makes the s32 at +4 the RSSI; +0x54 nonzero
+// skips a callback whose contract is not read. Everything else is left zero (optional sections, each with its own flag).
+const uint32_t kEventLqmUpdate = 0x27, kLqmSize = 0x1dc;
 }
 
 IOReturn MtkWlanNativeIf::gatedJoin(OSObject *owner, void *params, void *rc, void *, void *) {
@@ -581,8 +587,24 @@ void MtkWlanNativeIf::serviceJoin() {
             uint8_t m[0x58];
             bzero(m, sizeof(m));
             uint32_t interval = (found && curBss->beacon_interval) ? curBss->beacon_interval : 100;
-            store<uint32_t>(m, 0x54, (1000u * 1000u / 1024u) / interval + 1);         // beacons in the last second, at least 1
+            uint32_t perSecond = (1000u * 1000u / 1024u) / interval + 1;               // beacons in the last second, at least 1
+            store<uint32_t>(m, 0x54, perSecond);
             postEvent(kEventBeaconCounter, m, sizeof(m));
+            if (lqmMsg) {
+                bzero(lqmMsg, kLqmSize);
+                lqmMsg[0] = 1;
+                store<int32_t>(lqmMsg, 4, found ? curBss->rssi : -60);
+                store<uint32_t>(lqmMsg, 0x14, lqmTick);                                // a counter that grows: +0x1c > +0x14
+                store<uint32_t>(lqmMsg, 0x1c, lqmTick + 1);
+                store<uint32_t>(lqmMsg, 0x24, rxDelivered ? rxDelivered : 1);           // frames received
+                store<uint32_t>(lqmMsg, 0x28, perSecond);                               // beacons heard
+                lqmMsg[0x30] = 1;
+                lqmMsg[0x54] = 1;
+                lqmMsg[0x1d8] = 1;
+                lqmMsg[0x1d9] = 1;
+                lqmTick++;
+                postEvent(kEventLqmUpdate, lqmMsg, kLqmSize);
+            }
             beaconReports++;
         }
         IOLockLock(lock);
