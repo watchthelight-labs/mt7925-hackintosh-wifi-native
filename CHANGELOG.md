@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.7 (2026-10-18)
+
+- Beacon-counter events (0xaf, u32 count at +0x54) once a second while the link is up. Without them the Family raises the fault "missed beacons timeout" about 60 s after every join and leaves the network. Under test.
+
+## 0.4.6 (2026-10-18)
+
+- The candidate BSSID is read at +0x21c (0.4.5 read the wrong field). Confirmed on the author's laptop: the join lands on the access point macOS chose.
+
 ## 0.4.5 (2026-10-18)
 
 - `setWCL_ASSOCIATE` passes the first candidate's BSSID to the core (`apple80211AssocCandidates`: count at +0x214, entries of 18 bytes from +0x21c, BSSID at +6). 0.4.4 joined the core's own favourite access point and the Family re-joined every 15 to 60 s. Under test.
