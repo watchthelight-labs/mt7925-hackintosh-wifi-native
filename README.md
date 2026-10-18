@@ -1,10 +1,10 @@
-# MtkWlanNative
+# MtkWlanNative: the native Wi-Fi menu for the MediaTek MT7925 on macOS Hackintosh
 
 > **Heads up:** a good portion of this code is AI generated. I do understand how it works,
 > and I'm happy to explain any of it. If something looks wrong or you have a question,
 > open an issue or ping me on Discord (`watchthelight`).
 
-The native Wi-Fi front end for [MtkWlan](https://github.com/watchthelight-labs/MtkWlan), the from-scratch macOS driver
+The native Wi-Fi front end for [MtkWlan](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi), the from-scratch macOS driver
 for the MediaTek MT7925 (PCI `14C3:7925`). MtkWlan alone shows macOS an Ethernet card. This second kext is an
 `IO80211Controller` plus an `IO80211InfraProtocol` interface built against Apple's IO80211 and Skywalk families, so
 macOS sees a real Wi-Fi card: the Wi-Fi menu lists networks, macOS runs the scans and the joins, saves the network, sets
@@ -70,7 +70,7 @@ so it is the core that decides whether your card works; the front end then depen
    loaded kexts, every `ioreg` property of both kexts, interfaces and routes, the Wi-Fi system profile, the kernel log
    lines of the drivers and the IO80211 family, the Wi-Fi daemons' log, and the last kernel panic reports. MAC addresses
    and SSIDs are replaced by placeholders (`--no-redact` keeps them). Nothing in it is a key or passphrase.
-4. Open an issue at github.com/watchthelight-labs/MtkWlanNative/issues with the archive and three lines: the card,
+4. Open an issue at github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues with the archive and three lines: the card,
    the macOS build (`sw_vers`), and what you saw (did the Wi-Fi menu list networks, did a join get a lease, did the
    machine panic). A panic file in the report tells me where.
 
