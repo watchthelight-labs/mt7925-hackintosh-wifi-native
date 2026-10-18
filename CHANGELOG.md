@@ -2,7 +2,7 @@
 
 ## 0.4.9 (2026-10-18)
 
-- Link quality update events (0x27, 0x1dc bytes) once a second while the link is up. The Family's assoc timer declares "missed beacons" when its beacon and traffic timestamps are both older than 60 s, and only this event refreshes them; the beacon counter of 0.4.7 feeds a different counter. Under test.
+- Link quality update events (0x27, 0x1dc bytes) once a second while the link is up. The Family's assoc timer declares "missed beacons" when its beacon and traffic timestamps are both older than 60 s, and only this event refreshes them; the beacon counter of 0.4.7 feeds a different counter. Proven on the author's laptop: ten quiet minutes without a leave.
 
 ## 0.4.8 (2026-10-18)
 
