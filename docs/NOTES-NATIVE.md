@@ -123,3 +123,13 @@ alloc and init. On 25G241 nothing else starts a pipe that no catalogue personali
 !matched" in the registry). 0.4.3 calls `IOService::start(owner)` on the fault data pipe, its stream and the log pipe right
 after creating them (the pipe then creates its timer on its work loop, publishes the `CCPipe` resource and registers
 itself), traced as `ctl:fault pipe start=1`. The pointer cast is safe: both classes have IOService as their only base.
+
+## 0.4.4 and 0.4.5 (N-145, N-146): the pipe order and the candidate BSSID
+
+N-144: starting the CoreCapture objects before the interface bound the core took the native start past the core's 15 s
+front-end fallback (`FE_FALLBACK_TICKS`), so the Ethernet front end won. 0.4.4 starts them after `mk:startWithInfo ok`.
+N-145 passed stage E (native interface, SSID, real default route after the captive portal), but the Family left and
+re-joined every 15 to 60 s (I-067): it asked for channels 52, 11, 108 in turn and the core always joined its own pick
+because `setWCL_ASSOCIATE` zeroed the BSSID. 0.4.5 reads the candidate list (`WCLJoinRequest::addAssocCandidates`:
+u32 count at +0x214, entries of 18 bytes from +0x21c, BSSID at +6, u16 rssi at +12) and passes the first candidate's
+BSSID to the core. Published as watchthelight-labs/MtkWlanNative, release 0.4.5 (pre-release until N-146).
