@@ -4,12 +4,29 @@
 > and I'm happy to explain any of it. If something looks wrong or you have a question,
 > open an issue or ping me on Discord (`watchthelight`).
 
-The native Wi-Fi front end for [MtkWlan](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi), the from-scratch macOS driver
-for the MediaTek MT7925 (PCI `14C3:7925`). MtkWlan alone shows macOS an Ethernet card. This second kext is an
-`IO80211Controller` plus an `IO80211InfraProtocol` interface built against Apple's IO80211 and Skywalk families, so
-macOS sees a real Wi-Fi card: the Wi-Fi menu lists networks, macOS runs the scans and the joins, saves the network, sets
-a per-network private address, hands the data path to Skywalk. The MtkWlan core still owns the hardware (firmware, DMA,
-scan, association, WPA2) and this kext talks to it through a C ops table (`MtkCoreApi.h`), not through C++ linking.
+The native Wi-Fi menu for the MediaTek MT7925 (Filogic 360, Wi-Fi 7, PCI `14C3:7925`, AMD RZ717 `14C3:0717`) on a
+Hackintosh. [mt7925-hackintosh-wifi](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi) is the driver; on
+its own it shows macOS an Ethernet port and you join networks with a tool, like SimpleMtkWlan does for the MT7921 and
+MT7922. This second kext is an `IO80211Controller` plus an `IO80211InfraProtocol` interface built against Apple's
+IO80211 and Skywalk families, so **macOS sees a real Wi-Fi card: the Wi-Fi icon in the menu bar, the Wi-Fi pane in
+System Settings, scans and joins run by macOS, saved networks, auto-join at boot, a private address per network, the
+data path on Skywalk.** No client app, no command line. The driver still owns the hardware (firmware, DMA, scan,
+association, WPA2) and this kext talks to it through a C ops table (`MtkCoreApi.h`), not through C++ linking.
+
+It is built against one macOS build, Tahoe 26.7.1 (25G241), and refuses to load on any other, so a wrong build can
+never take your network away: the driver falls back to its Ethernet front end by itself.
+
+## The MT7925 set
+
+| Repo | What it does |
+|---|---|
+| [mt7925-hackintosh-wifi](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi) | the driver (required); its README has the cards table and the comparison with SimpleMtkWlan and AirportMtkWlan |
+| mt7925-hackintosh-wifi-native (this one) | the native Wi-Fi menu on top of it |
+| [mt7925-hackintosh-bluetooth](https://github.com/watchthelight-labs/mt7925-hackintosh-bluetooth) | the Bluetooth firmware loader for the same card |
+
+The bundle zip on the driver's [releases page](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/releases)
+carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
+[Legion-5-15IAX10-OpenCore](https://github.com/watchthelight-labs/Legion-5-15IAX10-OpenCore).
 
 ## Status
 
@@ -64,8 +81,10 @@ Family's own view: `log show --last 5m --info --predicate 'process == "airportd"
 
 ## Other MediaTek cards: collecting logs and reporting back
 
-The core driver has run on one card (MT7925 `14c3:7925`, subsystem `17aa:e0ff`). This front end only needs the core,
-so it is the core that decides whether your card works; the front end then depends on the macOS build. If you try it:
+The driver has run on one card (MT7925 `14c3:7925`, subsystem `17aa:e0ff`) and matches the AMD RZ717 (`14c3:0717`).
+This front end only needs the driver, so it is the driver that decides whether your card works; the front end then
+depends on the macOS build. The MT7921 and MT7922 are not supported by the driver yet (the plan and the call for
+testers are in [its issue #2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/2)). If you try it:
 
 1. Get MtkWlan working with its Ethernet front end first and report there if it does not.
 2. Install this kext, add the boot-args, reboot, wait a minute.
