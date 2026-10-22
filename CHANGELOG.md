@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased (branch scan-cache-roc, built, not yet tested on hardware)
+
+- Up to 128 networks go to the Wi-Fi menu instead of 48, to match the core's larger BSS cache (MtkWlan branch scan-cache-roc). With 48, weaker 2.4 GHz networks could still be left out in a crowded place. Idea from thanhnndev's [ga403wm-hackintosh 4257353](https://github.com/thanhnndev/ga403wm-hackintosh/commit/4257353065b34181b42993c946fb0956c47c6e32).
+
 ## 0.4.11 (2026-10-18)
 
 - Tx queues restart on the next 2 ms tick after the core frees a slot. They used to wait for the 10 ms control poll, which capped upload near 190 Mbit/s. Frames refused while the link was down are asked for again when it comes up.

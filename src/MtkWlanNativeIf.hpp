@@ -113,7 +113,7 @@ private:
     uint8_t scanSsid[32] = {};
     struct mtk_bss_info *bssSnap = nullptr;  // kBssSnap entries, filled under the core gate
     uint8_t *beaconMsg = nullptr;            // kBeaconHeader + MTK_BSS_IE_MAX
-    static const uint32_t kBssSnap = 48, kBeaconHeader = 0x44, kScanTimeoutPolls = 2500;   // 25 s at the 10 ms poll
+    static const uint32_t kBssSnap = 128, kBeaconHeader = 0x44, kScanTimeoutPolls = 2500;   // 25 s at the 10 ms poll
     void serviceScan();
     void deliverScanResults();
     void postEvent(uint32_t code, void *data, unsigned long length);
