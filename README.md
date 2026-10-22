@@ -116,6 +116,9 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
   `NOTICE.md`.
 - [AirportMtkWlan](https://github.com/mnnobre/AirportMtkWlan) and laobamac's itlwm / SimpleMtkWlan (GPL-2.0): read as
   references for what macOS expects of a Wi-Fi driver; no code from them is in this repository.
+- [qwz-macos](https://github.com/f0xeri/qwz-macos) (GPL-2.0, f0xeri): an independent native front end on 25G241 for a
+  Qualcomm WCN7850 core; its current-channel width flags and its power-state replay after wake were read as references;
+  no code from it is in this repository.
 - Apple's IO80211Family, IOSkywalkFamily and corecapture, read in disassembly to learn the ABI. No Apple code is in this
   repository; the generated headers hold class and method names and slot numbers only.
 
