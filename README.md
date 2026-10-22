@@ -4,9 +4,9 @@ The native Wi-Fi menu for the MediaTek MT7925 (Filogic 360, Wi-Fi 7, PCI `14C3:7
 Hackintosh. [mt7925-hackintosh-wifi](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi) is the driver; on
 its own it shows macOS an Ethernet port and you join networks with a tool, like SimpleMtkWlan does for the MT7921 and
 MT7922. This second kext is an `IO80211Controller` plus an `IO80211InfraProtocol` interface built against Apple's
-IO80211 and Skywalk families, so **macOS sees a real Wi-Fi card: the Wi-Fi icon in the menu bar, the Wi-Fi pane in
-System Settings, scans and joins run by macOS, saved networks, auto-join at boot, a private address per network, the
-data path on Skywalk.** No client app, no command line. The driver still owns the hardware (firmware, DMA, scan,
+IO80211 and Skywalk families, so macOS sees a real Wi-Fi card: the Wi-Fi icon in the menu bar, the Wi-Fi pane in
+System Settings, scans and joins run by macOS, saved networks, auto-join at boot, a private address per network and the
+data path on Skywalk. You don't need a client app or the command line. The driver still owns the hardware (firmware, DMA, scan,
 association, WPA2) and this kext talks to it through a C ops table (`MtkCoreApi.h`), not through C++ linking.
 
 It is built against one macOS build, Tahoe 26.7.1 (25G241), and refuses to load on any other, so a wrong build can
@@ -40,17 +40,17 @@ Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 
 | 0.2.1 | the station address follows the interface (macOS sets a private address per network; the firmware must answer to it) | DHCP works on the native data path |
 | 0.1.0 | controller and interface come up, Skywalk packet pool and queues, data path bridged to the core | packets flow |
 
-**Not there yet:** WPA2-PSK through the Wi-Fi menu is untested on air (the core's WPA2 code passes its host tests; the
-only network here is open). No roaming (the Family asks us to associate to one access point and we do exactly that),
+What's missing: WPA2-PSK through the Wi-Fi menu is untested on air (the core's WPA2 code passes its host tests; the
+only network here is open). No roaming (the Family asks us to associate to one access point and we do that),
 no 802.11ax/be, no sleep, no AirDrop/Continuity (no AWDL interface), no WPA3-SAE, no enterprise, Country Code is reported
 as XZ. The captive-portal flow is macOS's own: on a portal network the Captive Network Assistant opens and the interface
-is ranked "Never" until you log in, exactly as on a real Mac.
+is ranked "Never" until you log in, as on a real Mac.
 
 ## Requirements
 
 - MtkWlan 0.11.1 or later (0.11.0 works but can lose the start-up race, see the changelog) installed and working with its Ethernet front end first (core ops table v4).
-- macOS 26.7.1 build 25G241. The kext is built against that build's class layouts and vtable slots and **refuses to
-  load on any other build** (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
+- macOS 26.7.1 build 25G241. The kext is built against that build's class layouts and vtable slots and refuses to
+  load on any other build (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
   see "Building".
 
 ## Installation
@@ -71,9 +71,10 @@ detect the port again (`networksetup -detectnewhardware`).
 
 `ioreg -r -c MtkWlanNative -l -w0` holds the controller's state: `MtkNativeTrace` (what happened, in order),
 `MtkNativeCalls` (every request the Family made, by slot or ioctl code, and every event we posted), `MtkNativeScan`,
-`MtkNativeJoin`, `MtkNativeMacFollow`, the data path counters `MtkNativeTx` / `MtkNativeRx`, and `MtkNativeAbi`. The
-Family's own view: `log show --last 5m --info --predicate 'process == "airportd" OR process == "kernel"' | grep -E
-'IOC DEBUG|AUTO-JOIN'`. `docs/NOTES-NATIVE.md` is the lab notebook: what each version found in the 25G241 binaries.
+`MtkNativeJoin`, `MtkNativeMacFollow`, the data path counters `MtkNativeTx` / `MtkNativeRx`, and `MtkNativeAbi`. For
+the Family's own view: `log show --last 5m --info --predicate 'process == "airportd" OR process == "kernel"' | grep -E
+'IOC DEBUG|AUTO-JOIN'`. `docs/HOW-IT-WORKS.md` describes the design, and `docs/NOTES-NATIVE.md` is the lab notebook:
+what each version found in the 25G241 binaries.
 
 ## Other MediaTek cards: collecting logs and reporting back
 
@@ -99,10 +100,6 @@ generated from a dump of the macOS build's kernel collection (class sizes, vtabl
 routes ioctls to); `tools/kcabi/dump.py` makes that dump on the target machine and `tools/kcabi/genhdr.py gen` turns it
 into headers for another build. The build script then checks that every override sits on Apple's slot and that every
 undefined symbol is exported by the running kernel collection (`tools/kcabi/linkcheck.py`).
-
-## How it works
-
-`docs/HOW-IT-WORKS.md`, and `docs/NOTES-NATIVE.md` for the details per version.
 
 ## Credits
 

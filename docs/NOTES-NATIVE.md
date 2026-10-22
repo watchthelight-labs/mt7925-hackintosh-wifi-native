@@ -99,7 +99,7 @@ layouts follow ga403wm itlmt7925Native (BSD-3-Clause-Clear), re-read against the
 ## 0.4.1 (N-142): the two requests the join path sends before ASSOCIATE
 
 N-141 showed the sequence the 25G241 Family runs for a join request from airportd: a directed scan, "Will associate"
-with a per-network private MAC, GET 0x1ab WCL_LOW_LATENCY_INFO, **SET 0x170 SET_MAC_ADDRESS** (the private address;
+with a per-network private MAC, GET 0x1ab WCL_LOW_LATENCY_INFO, SET 0x170 SET_MAC_ADDRESS (the private address;
 `IO80211SkywalkInterface::setSET_MAC_ADDRESS`, Family code that ends in our slot 470 `setMacAddress`), then SET 0x1ba
 ASSOCIATE. 0x170 was refused by the allowlist, so ASSOCIATE failed with 58 and airportd retried forever (I-064). 0.4.1
 admits 0x170 and 0x22d (DBRG_ENTROPY, slot 662, new on 25G241; the bytes are accepted and dropped). `setMacAddress`
