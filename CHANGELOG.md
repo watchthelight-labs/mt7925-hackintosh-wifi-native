@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased (branch scan-cache-roc, built, not yet tested on hardware)
+## 0.4.12 (built 2026-10-22, not yet tested on hardware)
+
+- Pairs with MtkWlan 0.12.0. When the core's link supervisor resets the chip and reloads the firmware, the link goes down and comes back through the existing "link restored by core" path, so the Wi-Fi menu shows a short drop and rejoins.
+- Works in macOS Recovery on 26.7.1 (25G241): Recovery's boot kernel collection carries the same IO80211Family 1200.13.1, IOSkywalkFamily and corecapture, so the ABI guard engages there too (checked from the Recovery volume, a boot test is next).
 
 - Up to 128 networks go to the Wi-Fi menu instead of 48, to match the core's larger BSS cache (MtkWlan branch scan-cache-roc). With 48, weaker 2.4 GHz networks could still be left out in a crowded place. Idea from thanhnndev's [ga403wm-hackintosh 4257353](https://github.com/thanhnndev/ga403wm-hackintosh/commit/4257353065b34181b42993c946fb0956c47c6e32).
 
