@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- System Information showed "Firmware Version: MtkWlanNative 0.4.11" on 0.4.12 and 0.4.13: `MTK_NATIVE_VERSION` was not bumped. It reads 0.4.13 now, and `build.sh` stops when it and Info.plist differ (seen in the report on [#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
+- `tools/mtk-report.sh` also replaces MACs printed without leading zeros (netstat's route table showed the router's), IPv6 addresses and the `.local` host name.
+- README: WPA2-PSK from the Wi-Fi menu confirmed on air by oliverchu (#3); notes on OpenCore keeping an old `boot-args` and on the leftover "Ethernet 2" service.
+
 ## 0.4.13 (2026-10-23)
 
 - The Wi-Fi details in macOS are real now ([#1](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/1)). With MtkWlan 0.12.1, `wdutil info` on the author's Legion 5 shows PHY Mode 11ac, Channel 5g100/80, MCS Index 9, NSS 2, Guard Interval 400 and Tx Rate 866 Mbps. 0.4.11 showed 20 MHz and a fixed 54 Mbps.

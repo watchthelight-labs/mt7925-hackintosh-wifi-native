@@ -40,8 +40,11 @@ Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 
 | 0.2.1 | the station address follows the interface (macOS sets a private address per network; the firmware must answer to it) | DHCP works on the native data path |
 | 0.1.0 | controller and interface come up, Skywalk packet pool and queues, data path bridged to the core | packets flow |
 
-What's missing: WPA2-PSK through the Wi-Fi menu is untested on air (the core's WPA2 code passes its host tests; the
-only network here is open). No roaming (the Family asks us to associate to one access point and we do that),
+WPA2-PSK through the Wi-Fi menu works: oliverchu joined a WPA/WPA2 Personal network from the menu on an AM5 desktop
+(AMD RZ717 card, MtkWlan 0.12.1 and this kext at 0.4.13, macOS 25G241), with auto-join at boot and a DHCP lease
+([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
+
+What's missing: no roaming (the Family asks us to associate to one access point and we do that),
 no 802.11ax/be, no sleep, no AirDrop/Continuity (no AWDL interface), no WPA3-SAE, no enterprise, Country Code is reported
 as XZ. The captive-portal flow is macOS's own: on a portal network the Captive Network Assistant opens and the interface
 is ranked "Never" until you log in, as on a real Mac.
@@ -63,9 +66,19 @@ is ranked "Never" until you log in, as on a real Mac.
    and still has not registered after 90 s (15 s with MtkWlan before 0.11.1), the core falls back to the Ethernet front
    end by itself, so a broken build still leaves you with network.
 
-If the network interface for the card was created while it was an Ethernet port, its service in System Settings may
-still be of type Ethernet ("Network Service Inactive" in the Wi-Fi system profile). Remove that service and let macOS
-detect the port again (`networksetup -detectnewhardware`).
+OpenCore's `NVRAM > Add` does not replace a `boot-args` that is already in NVRAM (the OpenCore log says `ignored,
+exists`), so the new flags can be silently skipped. List `boot-args` under `NVRAM > Delete` for
+`7C436110-AB2A-4BBB-A880-FE41995C9F82`, or pick Reset NVRAM in the OpenCore picker once. Without the flags
+`MtkNativeLast` reads `ctl:controller only (no interface requested)` and there is no Wi-Fi port at all.
+
+If the card ran as an Ethernet port before, macOS keeps that port's network service (often named "Ethernet 2") and
+moves it to the Wi-Fi port. The link works, but the service keeps its Ethernet name and System Information can still
+say "Network Service Inactive" while you are connected. `networksetup -removenetworkservice` refuses it because it is
+the only service on the Wi-Fi port. Renaming it fixes the name without dropping the link
+(`networksetup -renamenetworkservice "Ethernet 2" "Wi-Fi"`). For a fresh service, add one on the Wi-Fi port first and
+then remove the old one: `networksetup -createnetworkservice "Wi-Fi 2" Wi-Fi`, then
+`networksetup -removenetworkservice "Ethernet 2"` (not tested yet; report back in
+[#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3) if you try it).
 
 ## Diagnostics
 
@@ -103,6 +116,9 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
 
 ## Credits
 
+- [oliverchu](https://github.com/oliverchu): the first WPA2-PSK join on air, on a COLORFUL B850M desktop with an AMD
+  RZ717 card, and the boot-args and network-service notes under Installation
+  ([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
 - [ga403wm-hackintosh](https://github.com/thanhnndev/ga403wm-hackintosh) (BSD-3-Clause-Clear, Copyright (c) 2026
   thanhnndev and contributors): the shape of a native front end for a MediaTek core on macOS 15, the interface start
   sequence, the join event sequence and several payload layouts, re-read against the 25G241 binaries here. See
