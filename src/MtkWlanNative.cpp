@@ -38,6 +38,7 @@ bool commandAllowed(int cmd) {
     case 0x1b1: case 0x1cc: case 0x1b2: case 0x1bc: case 0x1c6:   // BSS_INFO, EXTENDED_BSS_INFO, TRAFFIC_COUNTERS, LINK_UP_DONE, LINK_STATE_UPDATE
     case 0x1be: case 0x1f6: case 0x1bb: case 0x1b5: case 0x1ac: case 0x1eb:   // accepted and recorded on the link path
     case 0x170: case 0x22d:                                 // SET_MAC_ADDRESS (the private address, asked before every join; N-141 died here), DBRG_ENTROPY
+    case 0x37: case 0x39: case 0xc3:                        // GUARD_INTERVAL, MCS, MCS_VHT (native #1: what Wi-Fi details show)
         return true;
     default:
         return false;
@@ -166,13 +167,23 @@ bool MtkWlanNative::makeFaultReporter(IOService *owner) {
 bool MtkWlanNative::start(IOService *provider) {
     nativeCallInit();
     nativeTrace(this, "ctl:start");
-    // v4 (0.11.0) adds set_mac for the private address; a v3 core (0.10.0) still works, without it
-    if (provider && provider->callPlatformFunction(MTK_CORE_OPS_V4, false, (void *)&ops4, &core, nullptr, nullptr) == kIOReturnSuccess &&
-        ops4 && core && ops4->v3.v2.v1.version == MTK_CORE_API_V4 && ops4->v3.v2.v1.size >= sizeof(mtk_core_ops_v4)) {
+    // v5 (0.12.1) adds the rate details and the country code, v4 (0.11.0) set_mac; a v3 core (0.10.0) still works
+    if (provider && provider->callPlatformFunction(MTK_CORE_OPS_V5, false, (void *)&ops5, &core, nullptr, nullptr) == kIOReturnSuccess &&
+        ops5 && core && ops5->v4.v3.v2.v1.version == MTK_CORE_API_V5 && ops5->v4.v3.v2.v1.size >= sizeof(mtk_core_ops_v5)) {
+        ops4 = &ops5->v4;
         ops = &ops4->v3;
     } else {
-        ops4 = nullptr;
+        ops5 = nullptr;
         core = nullptr;
+    }
+    if (!ops) {
+        if (provider && provider->callPlatformFunction(MTK_CORE_OPS_V4, false, (void *)&ops4, &core, nullptr, nullptr) == kIOReturnSuccess &&
+            ops4 && core && ops4->v3.v2.v1.version == MTK_CORE_API_V4 && ops4->v3.v2.v1.size >= sizeof(mtk_core_ops_v4)) {
+            ops = &ops4->v3;
+        } else {
+            ops4 = nullptr;
+            core = nullptr;
+        }
     }
     if (!ops && (!provider || provider->callPlatformFunction(MTK_CORE_OPS_V3, false, (void *)&ops, &core, nullptr, nullptr) != kIOReturnSuccess ||
                  !ops || !core || ops->v2.v1.version != MTK_CORE_API_V3 || ops->v2.v1.size < sizeof(mtk_core_ops_v3))) {
@@ -180,7 +191,7 @@ bool MtkWlanNative::start(IOService *provider) {
         declineCore(provider, "no core ops v3");
         return false;
     }
-    nativeTrace(this, "ctl:core ops v%u", ops4 ? 4u : 3u);
+    nativeTrace(this, "ctl:core ops v%u", ops5 ? 5u : ops4 ? 4u : 3u);
     if (ops->v2.v1.get_mac(core, mac) != 0) {
         nativeTrace(this, "ctl:no station address");
         declineCore(provider, "no station address");
@@ -449,8 +460,19 @@ IOReturn MtkWlanNative::setCOUNTRY_CODE(IO80211SkywalkInterface *, apple80211_co
     const uint8_t *d = (const uint8_t *)data + 4;
     if (memcmp(countryCode, d, sizeof(countryCode)) != 0) {
         memcpy(countryCode, d, sizeof(countryCode));
-        nativeTrace(this, "ioctl:setCOUNTRY_CODE (recorded only)");
+        int rc = -2;
+        if (ops5 && core && provLoop)
+            provLoop->runAction(&MtkWlanNative::gatedSetCountry, this, &rc, nullptr, nullptr, nullptr);
+        nativeTrace(this, "ioctl:setCOUNTRY_CODE %c%c (core %d)", countryCode[0] ? countryCode[0] : '?',
+                    countryCode[1] ? countryCode[1] : '?', rc);
     }
+    return kIOReturnSuccess;
+}
+
+IOReturn MtkWlanNative::gatedSetCountry(OSObject *owner, void *rc, void *, void *, void *) {
+    MtkWlanNative *self = OSDynamicCast(MtkWlanNative, owner);
+    if (!self || !self->ops5 || !self->core) { *(int *)rc = -2; return kIOReturnSuccess; }
+    *(int *)rc = self->ops5->set_country(self->core, (const char *)self->countryCode);
     return kIOReturnSuccess;
 }
 

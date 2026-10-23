@@ -20,7 +20,24 @@ const IOReturn kNotAssociated = (IOReturn)0xe0822403;
 const IOReturn kNoChannel = (IOReturn)0xe0822801;
 // apple80211_channel flags: band 0x8 = 2.4 GHz, 0x10 = 5 GHz; 0x2 = 20 MHz; 0x80 = active scan allowed
 inline uint32_t channelFlags(uint32_t ch) { return (ch > 14 ? 0x10u : 0x8u) | 0x2u; }
+// the current channel as ChanSpecConvToApple80211Channel writes it (25G241): 0x4 40 MHz (+0x200 extension above),
+// 0x400 80 MHz, 0x100 DFS (52-144)
+inline uint32_t linkChannelFlags(const mtk_link_info &li) {
+    uint32_t f = li.channel > 14 ? 0x10u : 0x8u;
+    if (li.channel >= 52 && li.channel <= 144) f |= 0x100;
+    if (li.bw == 2) f |= 0x400;
+    else if (li.bw == 1) f |= 0x4u | (li.center > li.channel ? 0x200u : 0u);
+    else f |= 0x2;
+    return f;
+}
 } // namespace
+
+// the core's rate details (v5 core) while associated
+bool MtkWlanNativeIf::rateInfo(mtk_rate_info *r) {
+    bzero(r, sizeof(*r));
+    r->size = sizeof(*r);
+    return ops5 && linkUp() && ops5->get_rate_info(core, r) == 0;
+}
 
 // apple80211_channel_data: u32 version, then apple80211_channel {u32 version, u32 channel, u32 flags} at +4
 IOReturn MtkWlanNativeIf::getCHANNEL(apple80211_channel_data *d) {
@@ -31,7 +48,7 @@ IOReturn MtkWlanNativeIf::getCHANNEL(apple80211_channel_data *d) {
     store<uint32_t>(d, 0, 1);
     store<uint32_t>(d, 4, 1);
     store<uint32_t>(d, 8, li.channel);
-    store<uint32_t>(d, 12, channelFlags(li.channel));
+    store<uint32_t>(d, 12, linkChannelFlags(li));
     return kIOReturnSuccess;
 }
 
@@ -52,7 +69,47 @@ IOReturn MtkWlanNativeIf::getRATE(apple80211_rate_data *d) {
     if (!linkUp() || ops->v2.v1.get_link_info(core, &li) != 0 || !li.up) return kNotAssociated;
     store<uint32_t>(d, 0, 1);
     store<uint32_t>(d, 4, 1);
-    store<uint32_t>(d, 8, (uint32_t)(li.speed / 1000000ull));
+    mtk_rate_info r;
+    store<uint32_t>(d, 8, rateInfo(&r) ? r.tx_kbps / 1000 : (uint32_t)(li.speed / 1000000ull));
+    return kIOReturnSuccess;
+}
+
+// AppleBCMWLANCore (25G241) reads the firmware's nrate: getGUARD_INTERVAL [+4] = ns (800 / 400) for HT/VHT; getMCS
+// [+4] = the HT index (streams included) or the VHT MCS, nothing for legacy; getMCS_VHT for VHT only: [+4] MCS, [+8] NSS,
+// [+0xc] width in MHz, [+0x10] guard interval in ns. All return success when associated.
+IOReturn MtkWlanNativeIf::getGUARD_INTERVAL(apple80211_guard_interval_data *d) {
+    nativeCall(ctl, 'S', 478);
+    if (!d) return kIOReturnBadArgument;
+    mtk_rate_info r;
+    if (!rateInfo(&r)) return kNotAssociated;
+    store<uint32_t>(d, 0, 1);
+    store<uint32_t>(d, 4, r.short_gi ? 400u : 800u);
+    return kIOReturnSuccess;
+}
+
+IOReturn MtkWlanNativeIf::getMCS(apple80211_mcs_data *d) {
+    nativeCall(ctl, 'S', 479);
+    if (!d) return kIOReturnBadArgument;
+    mtk_rate_info r;
+    if (!rateInfo(&r)) return kNotAssociated;
+    store<uint32_t>(d, 0, 1);
+    if (r.phy == MTK_PHY_HT) store<uint32_t>(d, 4, (uint32_t)(r.mcs + 8 * (r.nss ? r.nss - 1 : 0)));
+    else if (r.phy >= MTK_PHY_VHT) store<uint32_t>(d, 4, r.mcs);
+    return kIOReturnSuccess;
+}
+
+IOReturn MtkWlanNativeIf::getMCS_VHT(apple80211_mcs_vht_data *d) {
+    nativeCall(ctl, 'S', 482);
+    if (!d) return kIOReturnBadArgument;
+    mtk_rate_info r;
+    if (!rateInfo(&r)) return kNotAssociated;
+    store<uint32_t>(d, 0, 1);
+    if (r.phy == MTK_PHY_VHT) {
+        store<uint32_t>(d, 4, r.mcs);
+        store<uint32_t>(d, 8, r.nss);
+        store<uint32_t>(d, 0xc, r.bw_mhz);
+        store<uint32_t>(d, 0x10, r.short_gi ? 400u : 800u);
+    }
     return kIOReturnSuccess;
 }
 

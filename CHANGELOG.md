@@ -1,6 +1,17 @@
 # Changelog
 
-## 0.4.12 (built 2026-10-22, not yet tested on hardware)
+## 0.4.13 (2026-10-23)
+
+- The Wi-Fi details in macOS are real now ([#1](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/1)). With MtkWlan 0.12.1, `wdutil info` on the author's Legion 5 shows PHY Mode 11ac, Channel 5g100/80, MCS Index 9, NSS 2, Guard Interval 400 and Tx Rate 866 Mbps. 0.4.11 showed 20 MHz and a fixed 54 Mbps.
+  - `getMCS` (slot 479), `getMCS_VHT` (482) and `getGUARD_INTERVAL` (478) are answered, and requests 0x37, 0x39 and 0xc3 are no longer refused. The layouts were read from AppleBCMWLANCore on 25G241: getMCS_VHT has the MCS at +4, streams at +8, width in MHz at +0xc and the guard interval in ns at +0x10.
+  - The current channel carries its real width and DFS flag, the same way Apple's `ChanSpecConvToApple80211Channel` writes them: 0x4 for 40 MHz (+0x200 when the extension is above), 0x400 for 80 MHz, 0x100 for channels 52 to 144.
+  - `getRATE` reports the core's rate instead of the fixed link speed.
+  - f0xeri's [qwz-macos](https://github.com/f0xeri/qwz-macos) 0.0.26 showed which requests Tahoe makes before it shows these fields.
+- `setCOUNTRY_CODE` goes to the core (MtkWlan 0.12.1 `set_country`) instead of only being recorded. On N-261 airportd never set a country, so this has not run yet.
+- A private Wi-Fi address the core refuses is tried again every 2 s, up to 6 times. Before, one refusal (for example during a join) left the firmware on the old address, and a network could look dead until Private Wi-Fi Address was turned off. Reported on an HP OMEN in [Game-5040/hackintosh-hp-8f06-macos26](https://github.com/Game-5040/hackintosh-hp-8f06-macos26).
+- Still needs MtkWlan 0.11.x or later. With a core older than 0.12.1 the rate fields fall back to the old answers.
+
+## 0.4.12 (built 2026-10-22; first boot 2026-10-23 together with 0.4.13)
 
 - Pairs with MtkWlan 0.12.0. When the core's link supervisor resets the chip and reloads the firmware, the link goes down and comes back through the existing "link restored by core" path, so the Wi-Fi menu shows a short drop and rejoins.
 - Works in macOS Recovery on 26.7.1 (25G241): Recovery's boot kernel collection carries the same IO80211Family 1200.13.1, IOSkywalkFamily and corecapture, so the ABI guard engages there too (checked from the Recovery volume, a boot test is next).

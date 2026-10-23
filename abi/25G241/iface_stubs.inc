@@ -205,11 +205,8 @@
 #endif
 #ifdef MTK_IFACE_DEFS
 IOReturn MtkWlanNativeIf::getTXPOWER(apple80211_txpower_data* a1) { nativeCall(ctl, 'S', 473); return kIOReturnUnsupported; }
-IOReturn MtkWlanNativeIf::getGUARD_INTERVAL(apple80211_guard_interval_data* a1) { nativeCall(ctl, 'S', 478); return kIOReturnUnsupported; }
-IOReturn MtkWlanNativeIf::getMCS(apple80211_mcs_data* a1) { nativeCall(ctl, 'S', 479); return kIOReturnUnsupported; }
 IOReturn MtkWlanNativeIf::getPOWER_DEBUG_INFO(apple80211_power_debug_info* a1) { nativeCall(ctl, 'S', 480); return kIOReturnUnsupported; }
 IOReturn MtkWlanNativeIf::getHT_CAPABILITY(apple80211_ht_capability* a1) { nativeCall(ctl, 'S', 481); return kIOReturnUnsupported; }
-IOReturn MtkWlanNativeIf::getMCS_VHT(apple80211_mcs_vht_data* a1) { nativeCall(ctl, 'S', 482); return kIOReturnUnsupported; }
 IOReturn MtkWlanNativeIf::getCHANNELS_INFO(apple80211_channels_info* a1) { nativeCall(ctl, 'S', 483); return kIOReturnUnsupported; }
 IOReturn MtkWlanNativeIf::getVHT_CAPABILITY(apple80211_vht_capability* a1) { nativeCall(ctl, 'S', 484); return kIOReturnUnsupported; }
 IOReturn MtkWlanNativeIf::getROAM_PROFILE(apple80211_roam_profile_all_bands* a1) { nativeCall(ctl, 'S', 485); return kIOReturnUnsupported; }

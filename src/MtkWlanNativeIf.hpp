@@ -98,6 +98,8 @@ private:
     MtkWlanNative *ctl = nullptr;            // not retained: the controller owns the interface's lifetime
     const mtk_core_ops_v3 *ops = nullptr;
     const mtk_core_ops_v4 *ops4 = nullptr;   // the same table as ops, with set_mac (version 4 of the core API)
+    const mtk_core_ops_v5 *ops5 = nullptr;   // the same table again, with the rate details (version 5, core 0.12.1)
+    bool rateInfo(mtk_rate_info *r);
     void *core = nullptr;
     uint8_t curMac[6] = {};                  // the last address the Family set through slot 470 (trace only)
     // the BSD interface (from the first processBSDCommand) and the link-layer address the core was last told to use:
@@ -105,6 +107,7 @@ private:
     void *bsdIf = nullptr;
     uint8_t followedMac[6] = {};
     uint32_t macFollows = 0, macFollowFails = 0;
+    uint8_t followTries = 0, followWait = 0;   // a refused address is tried again every 2 s, 6 times in all
     void followAddress();
     // stage C: a WCL scan request runs the core's scan; the results are posted as one 0xc9 event per BSS, then 0xed
     bool scanActive = false, scanDeliverNow = false;

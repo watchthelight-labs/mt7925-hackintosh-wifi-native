@@ -88,6 +88,7 @@ bool MtkWlanNativeIf::startWithInfo(MtkWlanNative *controller, IOSkywalkEthernet
     ctl = controller;
     ops = controller->coreOps();
     ops4 = controller->coreOps4();
+    ops5 = controller->coreOps5();
     core = controller->coreHandle();
     coreLoop = controller->coreLoop();
     if (coreLoop) coreLoop->retain();
@@ -335,16 +336,24 @@ void MtkWlanNativeIf::followAddress() {
     if (!bsdIf || !ops4 || !ops4->set_mac || !coreLoop) return;
     uint8_t m[6];
     if (ifnet_lladdr_copy_bytes((ifnet_t)bsdIf, m, sizeof(m)) != 0) return;
-    if ((m[0] & 1) || !(m[0] | m[1] | m[2] | m[3] | m[4] | m[5]) || !memcmp(m, followedMac, 6)) return;
+    if ((m[0] & 1) || !(m[0] | m[1] | m[2] | m[3] | m[4] | m[5])) return;
+    if (!memcmp(m, followedMac, 6)) {
+        // refused before (busy firmware, a join in flight): with the old address in DEV_INFO no unicast reply reaches
+        // the new one and the network looks dead until Private Wi-Fi Address is turned off (Game-5040, 2026-10-23)
+        if (!followTries || followTries >= 6 || ++followWait < 4) return;
+    } else {
+        followTries = 0;
+    }
+    followWait = 0;
     int rc = -2;
     if (coreLoop->runAction(gatedSetMac, this, m, &rc) != kIOReturnSuccess) rc = -2;
     nativeTrace(ctl, "if:follow lladdr %02x:%02x:%02x:%02x:%02x:%02x -> %d", m[0], m[1], m[2], m[3], m[4], m[5], rc);
-    if (rc == 0) { memcpy(followedMac, m, 6); memcpy(curMac, m, 6); macFollows++; }
-    else macFollowFails++;
-    char s[48];
-    snprintf(s, sizeof(s), "follows %u failed %u last rc %d", macFollows, macFollowFails, rc);
+    if (rc == 0) { memcpy(followedMac, m, 6); memcpy(curMac, m, 6); macFollows++; followTries = 0; }
+    else { macFollowFails++; followTries++; }
+    char s[80];
+    snprintf(s, sizeof(s), "follows %u failed %u last rc %d tries %u", macFollows, macFollowFails, rc, followTries);
     setProperty("MtkNativeMacFollow", s);
-    if (rc != 0) memcpy(followedMac, m, 6);   // one try per address: a refused address is not retried every poll
+    if (rc != 0) memcpy(followedMac, m, 6);   // not every poll: the retry above paces it
 }
 
 // ---- core callbacks (core gate held) ---------------------------------------------------------------------------------------
