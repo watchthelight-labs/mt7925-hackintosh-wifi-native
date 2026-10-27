@@ -128,6 +128,13 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
 - [qwz-macos](https://github.com/f0xeri/qwz-macos) (GPL-2.0, f0xeri): an independent native front end on 25G241 for a
   Qualcomm WCN7850 core; its current-channel width flags and its power-state replay after wake were read as references;
   no code from it is in this repository.
+- [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) (BSD-3-Clause-Clear, thanhnndev): the itlmt7925
+  driver split out of ga403wm-hackintosh, with per-build ABI folders like ours and AWDL work in progress that we follow
+  for [#2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/2); no code from it is in this
+  repository.
+- [AirportRTW89-MT7922](https://github.com/DGBooth/AirportRTW89-MT7922) (GPL-2.0, DGBooth): MT7922 as a native AirPort
+  device on Tahoe through OCLP's legacy IO80211 stack, the other route to the Wi-Fi menu; no code from it is in this
+  repository.
 - Apple's IO80211Family, IOSkywalkFamily and corecapture, read in disassembly to learn the ABI. No Apple code is in this
   repository; the generated headers hold class and method names and slot numbers only.
 
