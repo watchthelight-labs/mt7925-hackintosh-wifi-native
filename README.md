@@ -55,6 +55,9 @@ is ranked "Never" until you log in, as on a real Mac.
 - macOS 26.7.1 build 25G241. The kext is built against that build's class layouts and vtable slots and refuses to
   load on any other build (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
   see "Building".
+  macOS 26.7.2 (25G332) is not supported yet: a user reports that the kext stays out and MtkWlan
+  falls back to its Ethernet port, which `mtkwifi` can still join
+  ([#4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
 
 ## Installation
 
@@ -135,6 +138,10 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
 - [AirportRTW89-MT7922](https://github.com/DGBooth/AirportRTW89-MT7922) (GPL-2.0, DGBooth): MT7922 as a native AirPort
   device on Tahoe through OCLP's legacy IO80211 stack, the other route to the Wi-Fi menu; no code from it is in this
   repository.
+- [AirPort-RTW](https://github.com/JoMei9019-real/AirPort-RTW) (GPL-2.0, JoMei9019-real): Realtek PCIe cards as native
+  AirPort devices on Tahoe through the same OCLP legacy stack. Its 1.1.0 adds 802.11k/v roaming and an AWDL transmit
+  gate, and its install guide lists which legacy components Sonoma to Tahoe need (the system's IOSkywalkFamily blocked,
+  OCLP's IOSkywalkFamily and IO80211FamilyLegacy added); no code from it is in this repository.
 - Apple's IO80211Family, IOSkywalkFamily and corecapture, read in disassembly to learn the ABI. No Apple code is in this
   repository; the generated headers hold class and method names and slot numbers only.
 
