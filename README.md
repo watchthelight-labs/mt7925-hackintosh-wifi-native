@@ -26,10 +26,12 @@ carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
 
 ## Status
 
-Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.11.0.
+Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13.
 
 | Version | What it does | Result |
 |---|---|---|
+| 0.4.13 | real width, MCS, streams, guard interval and rate in the Wi-Fi details (needs MtkWlan 0.12.1); country code goes to the core; a refused private address is retried | `wdutil info` shows PHY 11ac, 5g100/80, MCS 9, NSS 2, guard interval 400, 866 Mbps; joins at boot |
+| 0.4.12 | pairs with MtkWlan 0.12.0 (link supervisor reset comes back through the restored-link path); 128 networks to the menu | booted together with 0.4.13, joins at boot |
 | 0.4.9 | link quality update events (0x27) once a second, which refresh the timestamps the Family's assoc timer checks | **stable**: macOS auto-joins at boot, holds the link (ten quiet minutes, zero leaves), DHCP, real default route, internet for apps. 0.4.7 and 0.4.8 posted beacon counters only and the Family still raised "missed beacons timeout" 60 s after each join |
 | 0.4.8 | beacon-counter events while the core holds the link | still lost the link every 60 s: the beacon counter feeds a different check |
 | 0.4.6 | the join lands on the access point macOS chose (the candidate BSSID at +0x21c) | confirmed; 0.4.4 and 0.4.5 re-joined every 15 to 60 s because the core joined its own favourite BSS |
