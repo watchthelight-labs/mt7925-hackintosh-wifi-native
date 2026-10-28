@@ -15,11 +15,11 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.13</string>
+	<string>0.4.14</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>0.4.13</string>
+	<string>0.4.14</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>MtkWlan native front end</key>
@@ -76,6 +76,45 @@
 						</dict>
 						<key>Xnu</key>
 						<string>xnu-12377.161.15.700.19~2</string>
+					</dict>
+					<dict>
+						<key>Build</key>
+						<string>25G332</string>
+						<key>Sizes</key>
+						<dict>
+							<key>IO80211CommandGate</key>
+							<integer>24</integer>
+							<key>IO80211Controller</key>
+							<integer>296</integer>
+							<key>IO80211InfraInterface</key>
+							<integer>304</integer>
+							<key>IO80211InfraProtocol</key>
+							<integer>304</integer>
+							<key>IO80211SkywalkInterface</key>
+							<integer>296</integer>
+							<key>IO80211WorkQueue</key>
+							<integer>80</integer>
+							<key>IOSkywalkEthernetInterface</key>
+							<integer>288</integer>
+							<key>IOSkywalkInterface</key>
+							<integer>176</integer>
+							<key>IOSkywalkNetworkInterface</key>
+							<integer>224</integer>
+							<key>IOSkywalkPacketBufferPool</key>
+							<integer>192</integer>
+							<key>IOSkywalkPacketQueue</key>
+							<integer>216</integer>
+							<key>IOSkywalkRxCompletionQueue</key>
+							<integer>312</integer>
+							<key>IOSkywalkRxSubmissionQueue</key>
+							<integer>336</integer>
+							<key>IOSkywalkTxCompletionQueue</key>
+							<integer>312</integer>
+							<key>IOSkywalkTxSubmissionQueue</key>
+							<integer>360</integer>
+						</dict>
+						<key>Xnu</key>
+						<string>xnu-12377.161.15.701.48~2</string>
 					</dict>
 				</array>
 			</dict>

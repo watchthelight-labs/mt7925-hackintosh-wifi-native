@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.14 (2026-10-28)
 
+- macOS 26.7.2 (25G332) is allow-listed ([#4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)). The kcabi dump of 25G332's boot kernel collection, taken from Apple's OTA, has the same instance sizes, vtables and 200 request slots as 25G241, and `genhdr.py` makes headers that differ only in the build name (`abi/25G332/`). Every undefined symbol of the kext is exported by the 25G332 collection. Of the functions Apple changed, only `kern_netif_queue_rx_enqueue` (a field moved from +0x4d8 to +0x4e8) touches the receive path, and the kext never calls it directly. Not yet booted on 25G332.
 - System Information showed "Firmware Version: MtkWlanNative 0.4.11" on 0.4.12 and 0.4.13: `MTK_NATIVE_VERSION` was not bumped. It reads 0.4.13 now, and `build.sh` stops when it and Info.plist differ (seen in the report on [#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
 - `tools/mtk-report.sh` also replaces MACs printed without leading zeros (netstat's route table showed the router's), IPv6 addresses and the `.local` host name.
 - README: WPA2-PSK from the Wi-Fi menu confirmed on air by oliverchu (#3); notes on OpenCore keeping an old `boot-args` and on the leftover "Ethernet 2" service.

@@ -9,7 +9,7 @@ System Settings, scans and joins run by macOS, saved networks, auto-join at boot
 data path on Skywalk. You don't need a client app or the command line. The driver still owns the hardware (firmware, DMA, scan,
 association, WPA2) and this kext talks to it through a C ops table (`MtkCoreApi.h`), not through C++ linking.
 
-It is built against one macOS build, Tahoe 26.7.1 (25G241), and refuses to load on any other, so a wrong build can
+It is built against two macOS builds, Tahoe 26.7.1 (25G241) and 26.7.2 (25G332), and refuses to load on any other, so a wrong build can
 never take your network away: the driver falls back to its Ethernet front end by itself.
 
 ## The MT7925 set
@@ -54,11 +54,12 @@ is ranked "Never" until you log in, as on a real Mac.
 ## Requirements
 
 - MtkWlan 0.11.1 or later (0.11.0 works but can lose the start-up race, see the changelog) installed and working with its Ethernet front end first (core ops table v4).
-- macOS 26.7.1 build 25G241. The kext is built against that build's class layouts and vtable slots and refuses to
-  load on any other build (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
+- macOS 26.7.1 (25G241) or 26.7.2 (25G332). The kext is built against those builds' class layouts and vtable slots and
+  refuses to load on any other build (`MtkNativeAbi` in `Info.plist` lists the builds it was generated for). For another build,
   see "Building".
-  macOS 26.7.2 (25G332) is not supported yet: a user reports that the kext stays out and MtkWlan
-  falls back to its Ethernet port, which `mtkwifi` can still join
+  25G332 support is new in 0.4.14. Its class sizes, vtables and request slots are identical to 25G241's (the
+  headers in `abi/25G332/` differ only in the build name), so the same binary serves both. On 0.4.13 and older the kext
+  stays out on 26.7.2 and MtkWlan falls back to its Ethernet port
   ([#4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
 
 ## Installation
@@ -113,7 +114,7 @@ testers are in [its issue #2](https://github.com/watchthelight-labs/mt7925-hacki
 
 ## Building
 
-`./build.sh` compiles against the Command Line Tools SDK with the ABI headers in `abi/25G241/`. Those headers are
+`./build.sh` compiles against the Command Line Tools SDK with the ABI headers in `abi/<build>/` (25G241 and 25G332 ship here). Those headers are
 generated from a dump of the macOS build's kernel collection (class sizes, vtables, the 200 request slots the Family
 routes ioctls to); `tools/kcabi/dump.py` makes that dump on the target machine and `tools/kcabi/genhdr.py gen` turns it
 into headers for another build. The build script then checks that every override sits on Apple's slot and that every
