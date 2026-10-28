@@ -26,7 +26,7 @@ carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
 
 ## Status
 
-Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13.
+Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13, and on 26.7.2 (25G332) with 0.4.14 (2026-10-28: the native interface came up at boot and joined the saved network on its own).
 
 | Version | What it does | Result |
 |---|---|---|
