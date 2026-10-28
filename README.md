@@ -26,7 +26,7 @@ carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
 
 ## Status
 
-Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13, and on 26.7.2 (25G332) with 0.4.14 (2026-10-28: the native interface came up at boot and joined the saved network on its own).
+Tested by me on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13, and on 26.7.2 (25G332) with 0.4.14 (2026-10-28: the native interface came up at boot and joined the saved network on its own).
 
 | Version | What it does | Result |
 |---|---|---|
@@ -44,7 +44,9 @@ Tested on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 
 
 WPA2-PSK through the Wi-Fi menu works: oliverchu joined a WPA/WPA2 Personal network from the menu on an AM5 desktop
 (AMD RZ717 card, MtkWlan 0.12.1 and this kext at 0.4.13, macOS 25G241), with auto-join at boot and a DHCP lease
-([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
+([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)). On 26.7.2 (25G332) a user with an ASUS ROG
+Strix B860-G desktop (on-board MT7925) reports Wi-Fi and Bluetooth working with 0.4.14
+([mt7925-hackintosh-wifi #4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
 
 What's missing: no roaming (the Family asks us to associate to one access point and we do that),
 no 802.11ax/be, no sleep, no AirDrop/Continuity (no AWDL interface), no WPA3-SAE, no enterprise, Country Code is reported
@@ -97,7 +99,8 @@ what each version found in the 25G241 binaries.
 
 ## Other MediaTek cards: collecting logs and reporting back
 
-The driver has run on one card (MT7925 `14c3:7925`, subsystem `17aa:e0ff`) and matches the AMD RZ717 (`14c3:0717`).
+I run the driver on one card (MT7925 `14c3:7925`, subsystem `17aa:e0ff`); users run it on the AMD RZ717 (`14c3:0717`)
+and on an ASUS B860 board's MT7925.
 This front end only needs the driver, so it is the driver that decides whether your card works; the front end then
 depends on the macOS build. The MT7921 and MT7922 are not supported by the driver yet (the plan and the call for
 testers are in [its issue #2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/2)). If you try it:
