@@ -140,6 +140,9 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
 - [AirportRTW89-MT7922](https://github.com/DGBooth/AirportRTW89-MT7922) (GPL-2.0, DGBooth): MT7922 as a native AirPort
   device on Tahoe through OCLP's legacy IO80211 stack, the other route to the Wi-Fi menu; no code from it is in this
   repository.
+- [RTL8814Native](https://github.com/DrogaBox/RTL8814Native) (GPL-2.0, DrogaBox): a native IO80211 and Skywalk front
+  end for the USB RTL8814AU on 26.7.1 that dumps IO80211's vtables per build and gates its build on them, the same
+  per-build pin we use; an independent dump to check ours against; no code from it is in this repository.
 - [AirPort-RTW](https://github.com/JoMei9019-real/AirPort-RTW) (GPL-2.0, JoMei9019-real): Realtek PCIe cards as native
   AirPort devices on Tahoe through the same OCLP legacy stack. Its 1.1.0 adds 802.11k/v roaming and an AWDL transmit
   gate, and its install guide lists which legacy components Sonoma to Tahoe need (the system's IOSkywalkFamily blocked,
