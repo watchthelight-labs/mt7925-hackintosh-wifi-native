@@ -45,8 +45,8 @@ Tested by me on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 2
 WPA2-PSK through the Wi-Fi menu works: oliverchu joined a WPA/WPA2 Personal network from the menu on an AM5 desktop
 (AMD RZ717 card, MtkWlan 0.12.1 and this kext at 0.4.13, macOS 25G241), with auto-join at boot and a DHCP lease
 ([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)). On 26.7.2 (25G332) a user with an ASUS ROG
-Strix B860-G desktop (on-board MT7925) reports Wi-Fi and Bluetooth working with 0.4.14
-([mt7925-hackintosh-wifi #4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
+Strix B860-G desktop (on-board MT7925) and a user with an HP Omen 16 (board 8F06) report Wi-Fi and Bluetooth working
+with 0.4.14 and LegionBtFix 0.3.0 ([mt7925-hackintosh-wifi #4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
 
 What's missing: no roaming (the Family asks us to associate to one access point and we do that),
 no 802.11ax/be, no sleep, no AirDrop/Continuity (no AWDL interface), no WPA3-SAE, no enterprise, Country Code is reported
