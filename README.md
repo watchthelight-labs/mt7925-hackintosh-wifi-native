@@ -146,7 +146,9 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
   repository.
 - [RTL8814Native](https://github.com/DrogaBox/RTL8814Native) (GPL-2.0, DrogaBox): a native IO80211 and Skywalk front
   end for the USB RTL8814AU on 26.7.1 that dumps IO80211's vtables per build and gates its build on them, the same
-  per-build pin we use; an independent dump to check ours against; no code from it is in this repository.
+  per-build pin we use; an independent dump to check ours against; its AWDL notes (the role 6 creation path, the
+  wifip2pd registration contract and what the kernel peer manager needs from a driver) are read as references for
+  [#2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/2); no code from it is in this repository.
 - [AirPort-RTW](https://github.com/JoMei9019-real/AirPort-RTW) (GPL-2.0, JoMei9019-real): Realtek PCIe cards as native
   AirPort devices on Tahoe through the same OCLP legacy stack. Its 1.1.0 adds 802.11k/v roaming and an AWDL transmit
   gate, and its install guide lists which legacy components Sonoma to Tahoe need (the system's IOSkywalkFamily blocked,
