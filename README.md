@@ -1,7 +1,9 @@
-# MtkWlanNative: the native Wi-Fi menu for the MediaTek MT7925 on macOS Hackintosh
+# WTLWifiMenu: the native Wi-Fi menu for the MediaTek MT7925 on macOS Hackintosh
+
+Renamed from `mt7925-hackintosh-wifi-native` on 2026-10-31; the kext is still `MtkWlanNative.kext`, so existing OpenCore configs keep working. Old links redirect here.
 
 The native Wi-Fi menu for the MediaTek MT7925 (Filogic 360, Wi-Fi 7, PCI `14C3:7925`, AMD RZ717 `14C3:0717`) on a
-Hackintosh. [mt7925-hackintosh-wifi](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi) is the driver; on
+Hackintosh. [WTLMtkWireless](https://github.com/watchthelight-labs/WTLMtkWireless) is the driver; on
 its own it shows macOS an Ethernet port and you join networks with a tool, like SimpleMtkWlan does for the MT7921 and
 MT7922. This second kext is an `IO80211Controller` plus an `IO80211InfraProtocol` interface built against Apple's
 IO80211 and Skywalk families, so macOS sees a real Wi-Fi card: the Wi-Fi icon in the menu bar, the Wi-Fi pane in
@@ -16,13 +18,13 @@ never take your network away: the driver falls back to its Ethernet front end by
 
 | Repo | What it does |
 |---|---|
-| [mt7925-hackintosh-wifi](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi) | the driver (required); its README has the cards table and the comparison with SimpleMtkWlan and AirportMtkWlan |
-| mt7925-hackintosh-wifi-native (this one) | the native Wi-Fi menu on top of it |
-| [mt7925-hackintosh-bluetooth](https://github.com/watchthelight-labs/mt7925-hackintosh-bluetooth) | the Bluetooth firmware loader for the same card |
+| [WTLMtkWireless](https://github.com/watchthelight-labs/WTLMtkWireless) | the driver (required); its README has the cards table and the comparison with SimpleMtkWlan and AirportMtkWlan |
+| WTLWifiMenu (this one) | the native Wi-Fi menu on top of it |
+| [WTLMtkBluetooth](https://github.com/watchthelight-labs/WTLMtkBluetooth) | the Bluetooth firmware loader for the same card |
 
-The bundle zip on the driver's [releases page](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/releases)
+The bundle zip on the driver's [releases page](https://github.com/watchthelight-labs/WTLMtkWireless/releases)
 carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
-[Legion-5-15IAX10-OpenCore](https://github.com/watchthelight-labs/Legion-5-15IAX10-OpenCore).
+[WTLLegionOpenCore](https://github.com/watchthelight-labs/WTLLegionOpenCore).
 
 ## Status
 
@@ -45,9 +47,9 @@ Tested by me on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 2
 
 WPA2-PSK through the Wi-Fi menu works: oliverchu joined a WPA/WPA2 Personal network from the menu on an AM5 desktop
 (AMD RZ717 card, MtkWlan 0.12.1 and this kext at 0.4.13, macOS 25G241), with auto-join at boot and a DHCP lease
-([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)). On 26.7.2 (25G332) a user with an ASUS ROG
+([#3](https://github.com/watchthelight-labs/WTLWifiMenu/issues/3)). On 26.7.2 (25G332) a user with an ASUS ROG
 Strix B860-G desktop (on-board MT7925) and a user with an HP Omen 16 (board 8F06) report Wi-Fi and Bluetooth working
-with 0.4.14 and LegionBtFix 0.3.0 ([mt7925-hackintosh-wifi #4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
+with 0.4.14 and LegionBtFix 0.3.0 ([WTLMtkWireless #4](https://github.com/watchthelight-labs/WTLMtkWireless/issues/4)).
 
 What's missing: no roaming (the Family asks us to associate to one access point and we do that),
 no 802.11ax/be, no sleep, no AirDrop/Continuity (no AWDL interface), no WPA3-SAE, no enterprise, Country Code is reported
@@ -63,7 +65,7 @@ is ranked "Never" until you log in, as on a real Mac.
   25G332 support is new in 0.4.14. Its class sizes, vtables and request slots are identical to 25G241's (the
   headers in `abi/25G332/` differ only in the build name), so the same binary serves both. On 0.4.13 and older the kext
   stays out on 26.7.2 and MtkWlan falls back to its Ethernet port
-  ([#4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)).
+  ([#4](https://github.com/watchthelight-labs/WTLMtkWireless/issues/4)).
 
 ## Installation
 
@@ -87,7 +89,7 @@ the only service on the Wi-Fi port. Renaming it fixes the name without dropping 
 (`networksetup -renamenetworkservice "Ethernet 2" "Wi-Fi"`). For a fresh service, add one on the Wi-Fi port first and
 then remove the old one: `networksetup -createnetworkservice "Wi-Fi 2" Wi-Fi`, then
 `networksetup -removenetworkservice "Ethernet 2"` (not tested yet; report back in
-[#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3) if you try it).
+[#3](https://github.com/watchthelight-labs/WTLWifiMenu/issues/3) if you try it).
 
 ## Diagnostics
 
@@ -104,7 +106,7 @@ I run the driver on one card (MT7925 `14c3:7925`, subsystem `17aa:e0ff`); users 
 and on an ASUS B860 board's MT7925.
 This front end only needs the driver, so it is the driver that decides whether your card works; the front end then
 depends on the macOS build. The MT7921 and MT7922 are not supported by the driver yet (the plan and the call for
-testers are in [its issue #2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/2)). If you try it:
+testers are in [its issue #2](https://github.com/watchthelight-labs/WTLMtkWireless/issues/2)). If you try it:
 
 1. Get MtkWlan working with its Ethernet front end first and report there if it does not.
 2. Install this kext, add the boot-args, reboot, wait a minute.
@@ -112,7 +114,7 @@ testers are in [its issue #2](https://github.com/watchthelight-labs/mt7925-hacki
    loaded kexts, every `ioreg` property of both kexts, interfaces and routes, the Wi-Fi system profile, the kernel log
    lines of the drivers and the IO80211 family, the Wi-Fi daemons' log, and the last kernel panic reports. MAC addresses
    and SSIDs are replaced by placeholders (`--no-redact` keeps them). Nothing in it is a key or passphrase.
-4. Open an issue at github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues with the archive and three lines: the card,
+4. Open an issue at github.com/watchthelight-labs/WTLWifiMenu/issues with the archive and three lines: the card,
    the macOS build (`sw_vers`), and what you saw (did the Wi-Fi menu list networks, did a join get a lease, did the
    machine panic). A panic file in the report tells me where.
 
@@ -128,7 +130,7 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
 
 - [oliverchu](https://github.com/oliverchu): the first WPA2-PSK join on air, on a COLORFUL B850M desktop with an AMD
   RZ717 card, and the boot-args and network-service notes under Installation
-  ([#3](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/3)).
+  ([#3](https://github.com/watchthelight-labs/WTLWifiMenu/issues/3)).
 - [ga403wm-hackintosh](https://github.com/thanhnndev/ga403wm-hackintosh) (BSD-3-Clause-Clear, Copyright (c) 2026
   thanhnndev and contributors): the shape of a native front end for a MediaTek core on macOS 15, the interface start
   sequence, the join event sequence and several payload layouts, re-read against the 25G241 binaries here. See
@@ -140,7 +142,7 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
   no code from it is in this repository.
 - [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) (BSD-3-Clause-Clear, thanhnndev): the itlmt7925
   driver split out of ga403wm-hackintosh, with per-build ABI folders like ours and AWDL work in progress that we follow
-  for [#2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/2); no code from it is in this
+  for [#2](https://github.com/watchthelight-labs/WTLWifiMenu/issues/2); no code from it is in this
   repository.
 - [AirportRTW89-MT7922](https://github.com/DGBooth/AirportRTW89-MT7922) (GPL-2.0, DGBooth): MT7922 as a native AirPort
   device on Tahoe through OCLP's legacy IO80211 stack, the other route to the Wi-Fi menu; no code from it is in this
@@ -151,10 +153,10 @@ undefined symbol is exported by the running kernel collection (`tools/kcabi/link
   wifip2pd registration contract and what the kernel peer manager needs from a driver; since 2026-10-30 its layer
   creates `awdl0` and gets the peer manager through configure and enableAWDL on 25G241, with no peer in the air yet)
   are read as references for
-  [#2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/2); no code from it is in this repository.
+  [#2](https://github.com/watchthelight-labs/WTLWifiMenu/issues/2); no code from it is in this repository.
 - [owly](https://github.com/t4t5/owly) (MIT, t4t5): AirDrop and AWDL for non-Apple Wi-Fi cards on Linux. It lists the
   MT7925 as working in shared mode and ships iOS 26 captures taken on an `mt7925e`, plus a protocol spec
-  (`docs/SPEC.md`); read as a reference for what the radio has to send for [#2](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/2);
+  (`docs/SPEC.md`); read as a reference for what the radio has to send for [#2](https://github.com/watchthelight-labs/WTLWifiMenu/issues/2);
   no code from it is in this repository.
 - [AirPort-RTW](https://github.com/JoMei9019-real/AirPort-RTW) (GPL-2.0, JoMei9019-real): Realtek PCIe cards as native
   AirPort devices on Tahoe through the same OCLP legacy stack. Its 1.1.0 adds 802.11k/v roaming and an AWDL transmit

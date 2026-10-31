@@ -157,7 +157,7 @@ next to 0xaf: valid flag, RSSI, a growing counter pair at +0x14/+0x1c, frames re
 ## 0.4.9 proven (N-150): stage E done
 
 Ten quiet minutes on N-150: one join, zero leaves, zero link drops, one 0x27 and one 0xaf per second, lease, unscoped
-default route, internet. Released as 0.4.9 (latest) on mt7925-hackintosh-wifi-native; OCEFI promoted to the USB stick.
+default route, internet. Released as 0.4.9 (latest) on WTLWifiMenu; OCEFI promoted to the USB stick.
 Left for later: `MtkNativeJoin` is refreshed only on a join (beaconreports shows 0 between joins), `MtkNativeInterface`
 on the controller stays No, Country Code XZ, WPA2-PSK through the menu untested on air, no roaming (the Family asks for
 one AP and gets it), sleep, AWDL.
