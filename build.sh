@@ -42,7 +42,8 @@ echo "== checks"
 otool -hv "$OUT/MacOS/$NAME" | grep -q KEXTBUNDLE || { echo "FAIL: not MH_KEXT_BUNDLE"; exit 1; }
 nm -u "$OUT/MacOS/$NAME" | sort > out/undefined.txt
 if grep -E '^_{2,3}(cxa_|Unwind|gxx_)|^__ZTV.*__cxxabiv|^__Znw|^__Zdl' out/undefined.txt; then echo "FAIL: C++ runtime symbols"; exit 1; fi
-if [ -f /System/Library/KernelCollections/BootKernelExtensions.kc ] && [ -f tools/kcabi/linkcheck.py ]; then
+# NO_LINKCHECK=1 skips the whole-collection read (heavy I/O; Legion I-116)
+if [ -z "${NO_LINKCHECK:-}" ] && [ -f /System/Library/KernelCollections/BootKernelExtensions.kc ] && [ -f tools/kcabi/linkcheck.py ]; then
   python3 -I tools/kcabi/linkcheck.py out/$NAME.kext --own-lib org.watchthelight.MtkWlan || echo "(link check: see above)"
 fi
 echo "built $KEXT_ID $KEXT_VERSION for $ABI: $OUT/MacOS/$NAME ($(stat -f %z "$OUT/MacOS/$NAME") bytes)"
