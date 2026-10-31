@@ -30,3 +30,10 @@ __ZN14WCLScanManager22ScanResultEventHandler*
 __ZN17WCLMngFrameRouter*
 __ZN17WCLScanCacheStore*
 __ZN21IO80211ScanCacheStore17updateOrAddBeacon*
+
+# AWDL stage 0 (MtkWlanNative AWDL plan, evidence/native/scout-1030-followups): the virtual interface create path and the
+# peer / protocol classes. Dumped so their layout can be diffed per build before any AWDL code is written.
+__ZN20IO80211InfraProtocol*
+__ZN19IO80211AWDLProtocol*
+__ZN22IO80211AWDLPeerManager*
+__ZN23IO80211VirtualInterface*

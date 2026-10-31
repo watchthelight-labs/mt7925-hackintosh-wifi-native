@@ -4,11 +4,13 @@
 # Project Legion: dump the IO80211Family / IOSkywalkFamily / corecapture ABI facts a native Wi-Fi front end depends on,
 # from the running system's kernel collection. Read-only: the collection is mmapped; carved copies go to the cache dir.
 """
-usage: dump.py [--kc PATH] [--out DIR] [--cache DIR] [--ref DIR]
+usage: dump.py [--kc PATH] [--out DIR] [--cache DIR] [--ref DIR] [--sites FILE]
 
   --kc     BootKernelExtensions.kc (default: /System/Library/KernelCollections/BootKernelExtensions.kc)
   --out    output directory (default: abi/native-wifi/<build> in the repo)
   --cache  scratch directory for carved Mach-O copies (default: ~/.cache/legion/kc<build>)
+  --sites  TSV of byte-pattern sites to re-verify (AWDL stage 0): symbol, hex pattern with ?? wildcards, label; written to
+           awdl-sites.txt as found / not found with the match addresses (see awdl-sites.example.tsv)
   --ref    reference dump to take the function list from (default: the ga403wm 24H32 tree in tooling/community)
 
 Writes: source.json, sizes.txt, <Class>.vtable.txt, <Class>.methods.txt, dispatch/ioctl-{get,set}-dispatch.txt,
@@ -36,6 +38,7 @@ CLASSES = '''
 IO80211Controller IO80211SkywalkInterface IO80211InfraInterface IO80211InfraProtocol IO80211WorkQueue IO80211CommandGate
 IO80211Peer IO80211VirtualInterface IO80211ControllerMonitor IO80211Glue IO80211FaultReporter IO80211PostOffice
 IO80211TimerSource IO80211BSSBeacon IO80211ScanManager IO80211PeerManager IO80211MacAddressAgent IO80211NetworkPacket
+IO80211AWDLProtocol IO80211AWDLPeerManager
 IOSkywalkInterface IOSkywalkNetworkInterface IOSkywalkEthernetInterface IOSkywalkPacketQueue IOSkywalkPacketBufferPool
 IOSkywalkTxSubmissionQueue IOSkywalkRxCompletionQueue IOSkywalkTxCompletionQueue IOSkywalkRxSubmissionQueue
 IOSkywalkPacket IOSkywalkNetworkPacket IOSkywalkPacketBuffer IOSkywalkQueueSet IOSkywalkLogicalLink
@@ -193,6 +196,31 @@ def dump_dispatch(kc, dis, out):
     return info
 
 
+def dump_sites(kc, path, out):
+    """Re-verify byte-pattern sites (symbol<TAB>pattern<TAB>label); a pattern may carry ?? wildcards. Read-only."""
+    lines = ['# symbol\tlabel\tresult\tmatch addresses (first 4)']
+    ok = bad = 0
+    for raw in open(path):
+        if raw.startswith('#') or not raw.strip():
+            continue
+        cols = raw.rstrip('\n').split('\t')
+        sym, pat, label = cols[0], cols[1], (cols[2] if len(cols) > 2 else '')
+        va = kc.find(sym)
+        if va is None:
+            lines.append('%s\t%s\tno symbol\t' % (sym, label))
+            bad += 1
+            continue
+        end = kc.next_sym(va) or va + 0x400
+        body = kc.read(va, end - va)
+        rx = re.compile(b''.join(b'.' if t == '??' else re.escape(bytes([int(t, 16)])) for t in pat.split()), re.S)
+        hits = ['%#x' % (va + m.start()) for m in rx.finditer(body)]
+        lines.append('%s\t%s\t%s\t%s' % (sym, label, '%d match(es)' % len(hits) if hits else 'NOT FOUND', ' '.join(hits[:4])))
+        ok += bool(hits)
+        bad += not hits
+    write(os.path.join(out, 'awdl-sites.txt'), lines)
+    return {'sites_file': os.path.basename(path), 'found': ok, 'not_found': bad}
+
+
 def dump_callbacks(kc, out):
     """WCL bulletin-board subscriber arrays (g<MANAGER>CallBackArray). Each entry is 0x18 bytes:
     u64 bulletin id ((event code << 16) | 2), then a C++ member-function pointer (function, this-adjust)."""
@@ -242,6 +270,7 @@ def main():
     ap.add_argument('--out')
     ap.add_argument('--cache')
     ap.add_argument('--ref', default=REF_DEFAULT)
+    ap.add_argument('--sites')
     a = ap.parse_args()
     a.kc = a.kc or os.path.join(a.root, 'System/Library/KernelCollections/BootKernelExtensions.kc')
     version, build = system_version(a.root)
@@ -256,6 +285,7 @@ def main():
     sizes = dump_sizes(kc, out)
     route = dump_dispatch(kc, dis, out)
     cbs = dump_callbacks(kc, out)
+    sites = dump_sites(kc, a.sites, out) if a.sites else None
 
     # MetaClass constructors of the vtable classes, as asm evidence for sizes.txt
     funcs = {}
@@ -321,6 +351,7 @@ def main():
         'vtables_symbol_spans': spans,
         'dispatch': route,
         'callback_arrays': cbs,
+        'awdl_sites': sites,
         'functions_dumped': len(index),
         'functions_missing': len(set(missing)),
         'tool': 'tools/kcabi/dump.py',
