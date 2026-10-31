@@ -26,10 +26,11 @@ carries both Wi-Fi kexts with an `INSTALL.md`. A complete EFI that uses the set:
 
 ## Status
 
-Tested by me on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13, and on 26.7.2 (25G332) with 0.4.14 (2026-10-28: the native interface came up at boot and joined the saved network on its own).
+Tested by me on one laptop (Legion 5 15IAX10, MT7925, OpenCore 1.0.8) on macOS 26.7.1 (25G241) with MtkWlan 0.12.1 and this kext at 0.4.13, and on 26.7.2 (25G332) with 0.4.14 (2026-10-28: the native interface came up at boot and joined the saved network on its own) and 0.4.15 (2026-10-31).
 
 | Version | What it does | Result |
 |---|---|---|
+| 0.4.15 | link quality to macOS (`setLQM`), real width for every scan result, the AP's country code, HT and VHT maps in the extended BSS info | `LinkQuality : 100` for en1, apsd `isBadLQ? NO` and a push received over Wi-Fi (before, push never connected, so iMessage, FaceTime and Handoff did not work on this card); Country Code US instead of XZ; scan results at 5 GHz/80 MHz instead of 20 |
 | 0.4.13 | real width, MCS, streams, guard interval and rate in the Wi-Fi details (needs MtkWlan 0.12.1); country code goes to the core; a refused private address is retried | `wdutil info` shows PHY 11ac, 5g100/80, MCS 9, NSS 2, guard interval 400, 866 Mbps; joins at boot |
 | 0.4.12 | pairs with MtkWlan 0.12.0 (link supervisor reset comes back through the restored-link path); 128 networks to the menu | booted together with 0.4.13, joins at boot |
 | 0.4.9 | link quality update events (0x27) once a second, which refresh the timestamps the Family's assoc timer checks | **stable**: macOS auto-joins at boot, holds the link (ten quiet minutes, zero leaves), DHCP, real default route, internet for apps. 0.4.7 and 0.4.8 posted beacon counters only and the Family still raised "missed beacons timeout" 60 s after each join |
