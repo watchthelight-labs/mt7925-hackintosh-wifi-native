@@ -136,6 +136,8 @@ private:
     uint32_t beaconReports = 0;              // 0xaf events posted (the Family's missed-beacons check)
     uint8_t *lqmMsg = nullptr;               // 0x1dc bytes, the 0x27 link quality update posted with each beacon report
     uint32_t lqmTick = 0;
+    int32_t lqReported = -3;               // last ifnet link quality given to setLQM; -3 = never
+    void reportLinkQuality(int32_t lq);
     uint32_t assocTraced = 0, linkStatusTraced = 0, linkStateTraced = 0, bssInfoTraced = 0, extBssTraced = 0, miscTraced = 0;
     struct mtk_status *statusBuf = nullptr;  // filled under the core gate by gatedStatus
     struct mtk_bss_info *curBss = nullptr;   // the associated BSS, looked up in the cache by gatedFindBss

@@ -7,6 +7,7 @@
 #include "MtkWlanNativeIf.hpp"
 #include "MtkWlanNative.hpp"
 #include "MtkNativeTrace.hpp"
+#include "MtkChanspec.h"
 #include <IOKit/IOLib.h>
 #include <string.h>
 
@@ -220,7 +221,7 @@ IOReturn MtkWlanNativeIf::gatedSetMac(OSObject *owner, void *mac, void *rc, void
 // The Family is event driven: setWCL_SCAN_REQ returns at once and the results arrive as messages posted through
 // IO80211Controller::postMessage. On 25G241 (WCLMngFrameRouter::scanResultEventHandler -> WCLScanCacheStore::updateOrAddBeacon
 // -> IO80211BSSBeacon::setBeaconDataFromMsg): one 0xc9 event per BSS, message = header + information elements, the IEs at
-// +0x44. Header: +0 u32 ie_len, +4 u16 channel spec (bits 0-7 channel, 0x1000 = 20 MHz, 0xc000 = 5 GHz), +6 ssid[32],
+// +0x44. Header: +0 u32 ie_len, +4 u16 channel spec (d11ac: bits 0-7 center channel, 8-10 control sideband, 0x1000/0x1800/0x2000 = 20/40/80 MHz, 0xc000 = 5 GHz; MtkChanspec.h), +6 ssid[32],
 // +0x26 ssid_len, +0x27 channel, +0x29 bssid[6], +0x30 s32 rssi, +0x34 s32 noise, +0x38 u16 beacon interval, +0x3a u16
 // capability, +0x3c u32 (new on 25G241, read only when flag bit 18 is set: left 0), +0x40 u32 flags (2 always, 0x80 from a
 // beacon rather than a probe response, 0x4000 rssi valid). 24H32 had the flags at +0x3c and the IEs at +0x40 (itlmt7925Native).
@@ -232,7 +233,7 @@ void buildBeacon(uint8_t *m, const mtk_bss_info &b) {
     const uint8_t ssidLen = b.ssid_len > 32 ? 32 : b.ssid_len;
     bzero(m, kBeaconHeader);
     store<uint32_t>(m, 0, ieLen);
-    store<uint16_t>(m, 4, (uint16_t)(b.channel | 0x1000 | (b.channel > 14 ? 0xc000 : 0)));
+    store<uint16_t>(m, 4, mtkChanspec(b.channel, b.ie, ieLen));
     memcpy(m + 6, b.ssid, ssidLen);
     m[0x26] = ssidLen;
     m[0x27] = b.channel;
@@ -521,6 +522,18 @@ IOReturn MtkWlanNativeIf::getWCL_BSS_INFO(apple80211_beacon_msg *d) {
 // count at +4, entries at +8 of 12 bytes: u32 version, u32 Mb/s, u32 basic; up to 15), +0xbc HT MCS set (u32 version, 10 bytes
 // of RX MCS bitmask), +0xcc VHT map (u32 version, u16 map, 0xffff none), +0xd4 HE map (same), +0xdc apple_mlo_context (0x37
 // bytes, zero without MLO), +0x113 the associated WPA/RSN element as is (0x101 bytes). 24H32 had the element at +0xdd.
+namespace {
+// VHT MCS maps, 2 bits per stream (0 = MCS 0-7, 1 = 0-8, 2 = 0-9, 3 = none): what both sides support
+inline uint16_t vhtMapAnd(uint16_t a, uint16_t b) {
+    uint16_t r = 0;
+    for (int s = 0; s < 8; s++) {
+        uint16_t x = (a >> (2 * s)) & 3, y = (b >> (2 * s)) & 3;
+        r |= (uint16_t)((x == 3 || y == 3 ? 3 : (x < y ? x : y)) << (2 * s));
+    }
+    return r;
+}
+} // namespace
+
 IOReturn MtkWlanNativeIf::getWCL_EXTENDED_BSS_INFO(apple80211_extended_bss_info *d) {
     nativeCall(ctl, 'S', 533);
     if (!d) return kIOReturnError;
@@ -548,6 +561,10 @@ IOReturn MtkWlanNativeIf::getWCL_EXTENDED_BSS_INFO(apple80211_extended_bss_info 
                     store<uint32_t>(b, 8 + 12 * nrates + 4, (v[k] >> 1) & 0x3f);
                     store<uint32_t>(b, 8 + 12 * nrates + 8, (uint32_t)(v[k] >> 7));
                 }
+            } else if (id == 45 && l >= 13) {                                         // HT Capabilities: RX MCS set
+                for (int k = 0; k < 10; k++) b[0xbc + 4 + k] = k < 2 ? v[3 + k] : 0;  // two streams here
+            } else if (id == 191 && l >= 12 && curBss->channel > 14) {               // VHT Capabilities: RX MCS map
+                store<uint16_t>(b, 0xcc + 4, vhtMapAnd(load<uint16_t>(v, 4), 0xfffa)); // ours: 2 streams, MCS 0-9
             } else if (id == 0x30 && !rsnLen && l + 2u <= 0x101) {                   // RSN
                 memcpy(b + 0x113, ie + p, l + 2u);
                 rsnLen = l + 2u;
@@ -610,6 +627,16 @@ void MtkWlanNativeIf::finishJoin(bool ok, const uint8_t bssid[6]) {
     if (assocTraced++ < 16) nativeTrace(ctl, "assoc:result ok=%u", ok);
 }
 
+// The interface's link quality (ifnet LQM: -1 unknown, 20 minimally viable, 50 poor, 100 good). Without it
+// State:/Network/Interface/<if>/LinkQuality stays unset and apsd treats the link as bad (isBadLQ), so push and with
+// it iMessage, FaceTime and Handoff never connect over Wi-Fi.
+void MtkWlanNativeIf::reportLinkQuality(int32_t lq) {
+    if (lq == lqReported) return;
+    lqReported = lq;
+    IOReturn r = setLQM((uint64_t)(int64_t)lq);
+    if (miscTraced++ < 12) nativeTrace(ctl, "lqm:%d rc=0x%x", lq, r);
+}
+
 // Every 10 ms on the work queue. A link the core dropped is reported down; an outstanding join is watched through the core's
 // join_result callback and its status (a join the core answered "already there" fires no callback); a link the core restored
 // by itself (its manager rejoins the wanted network after a loss) is announced again with the full sequence.
@@ -623,7 +650,7 @@ void MtkWlanNativeIf::serviceJoin() {
         if (nmLinkUp) { nmLinkUp = false; down = true; memcpy(downBssid, nmBssid, 6); linkDowns++; }
     }
     IOLockUnlock(lock);
-    if (down) postLinkStatus(downBssid, false, 1);
+    if (down) { postLinkStatus(downBssid, false, 1); reportLinkQuality(-1); }
     if (!active) {
         if ((++reannouncePolls % 50) != 0) return;                                 // every 500 ms
         // The Family's net manager wants to hear that beacons keep arriving: WCLNetManager::updateBeaconCounter (event 0xaf,
@@ -662,6 +689,12 @@ void MtkWlanNativeIf::serviceJoin() {
                 lqmTick++;
                 postEvent(kEventLqmUpdate, lqmMsg, kLqmSize);
             }
+            int32_t rssi = found ? curBss->rssi : -60;
+            if (found && ctl)
+                for (const uint8_t *e = curBss->ie, *end = curBss->ie + (curBss->ie_len > MTK_BSS_IE_MAX ? MTK_BSS_IE_MAX : curBss->ie_len);
+                     e + 2 <= end && e + 2 + e[1] <= end; e += 2 + e[1])
+                    if (e[0] == 7 && e[1] >= 3) { ctl->noteApCountry(e + 2); break; }   // Country element
+            reportLinkQuality(rssi >= -75 ? 100 : rssi >= -85 ? 50 : 20);
             beaconReports++;
         }
         IOLockLock(lock);

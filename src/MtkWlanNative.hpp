@@ -51,6 +51,7 @@ public:
     IOReturn setPOWER(IO80211SkywalkInterface *i, apple80211_power_data *d) override;
     IOReturn getCOUNTRY_CODE(IO80211SkywalkInterface *i, apple80211_country_code_data *d) override;
     IOReturn setCOUNTRY_CODE(IO80211SkywalkInterface *i, apple80211_country_code_data *d) override;
+    void noteApCountry(const uint8_t cc[2]);
     IOReturn setGET_DEBUG_INFO(IO80211SkywalkInterface *i, apple80211_debug_command *d) override;
 
     // for the interface
@@ -87,6 +88,8 @@ private:
     uint8_t mac[6] = {};
     uint32_t powerState = 0;                // what userland last set (apple80211_power_data +8)
     uint8_t countryCode[3] = {'X', 'Z', 0}; // Apple's "unknown country" code until the core's domain is published
+    bool countryFromOs = false;             // macOS set countryCode; it wins over the AP's Country element
+    uint8_t apCountry[3] = {0, 0, 0};       // Country element of the associated AP (802.11d), reported until macOS sets one
     uint32_t rejected = 0;
     bool capsTraced = false;
 };
