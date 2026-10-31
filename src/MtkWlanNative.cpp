@@ -4,7 +4,7 @@
 // ga403wm-hackintosh kexts/itlmt7925Native/itlmt7925_wifi.cpp (BSD-3-Clause-Clear, Copyright (c) 2026 thanhnndev and
 // contributors); every offset was re-read in the 25G241 dump (the kcabi dump of 25G241) before use.
 #include "MtkWlanNative.hpp"
-#define MTK_NATIVE_VERSION "0.4.14"   // also Info.plist (build.sh checks they match)
+#define MTK_NATIVE_VERSION "0.4.15"   // also Info.plist (build.sh checks they match)
 #include "MtkWlanNativeIf.hpp"
 #include "MtkNativeAbi.hpp"
 #include "MtkNativeTrace.hpp"
@@ -450,14 +450,25 @@ IOReturn MtkWlanNative::setPOWER(IO80211SkywalkInterface *, apple80211_power_dat
 IOReturn MtkWlanNative::getCOUNTRY_CODE(IO80211SkywalkInterface *, apple80211_country_code_data *data) {
     nativeCall(this, 'C', 0x33);
     if (!data) return kIOReturnBadArgument;
-    memcpy((uint8_t *)data + 4, countryCode, sizeof(countryCode));
+    const uint8_t *cc = (!countryFromOs && apCountry[0]) ? apCountry : countryCode;
+    memcpy((uint8_t *)data + 4, cc, sizeof(countryCode));
     return kIOReturnSuccess;
+}
+
+// the associated AP's Country element; report-only, the core's regulatory domain does not change
+void MtkWlanNative::noteApCountry(const uint8_t cc[2]) {
+    if (cc[0] < 'A' || cc[0] > 'Z' || cc[1] < 'A' || cc[1] > 'Z' || !memcmp(apCountry, cc, 2)) return;
+    apCountry[0] = cc[0];
+    apCountry[1] = cc[1];
+    apCountry[2] = 0;
+    nativeTrace(this, "country:AP says %c%c", cc[0], cc[1]);
 }
 
 IOReturn MtkWlanNative::setCOUNTRY_CODE(IO80211SkywalkInterface *, apple80211_country_code_data *data) {
     nativeCall(this, 'C', 0x80000033);
     if (!data) return kIOReturnBadArgument;
     const uint8_t *d = (const uint8_t *)data + 4;
+    countryFromOs = !(d[0] == 'X' && d[1] == 'Z');
     if (memcmp(countryCode, d, sizeof(countryCode)) != 0) {
         memcpy(countryCode, d, sizeof(countryCode));
         int rc = -2;

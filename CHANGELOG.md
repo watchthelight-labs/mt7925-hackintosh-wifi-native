@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.15 (built 2026-10-31, not booted yet)
+
+- Link quality goes to macOS. The interface now calls `setLQM` (slot 378, which ends in `IOSkywalkNetworkInterface::reportLinkQuality`) once a second while associated: 100 at -75 dBm or better, 50 down to -85 dBm, 20 below that, and -1 (unknown) when the link drops. Before, `State:/Network/Interface/en1/LinkQuality` was never set, apsd logged `isBadLQ? YES` and `Push is connected? NO`, so Apple push, and with it iMessage, FaceTime and Handoff, did not connect over Wi-Fi. Lead from the 2026-10-31 research run (an itlwm fork calls it the same way); checked live on the Legion before the change.
+- Scan results carry each network's real width ([#1](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi-native/issues/1)). The chanspec in each scan-result event is built from the HT and VHT Operation elements, in the Broadcom d11ac layout that `ChanSpecGetPrimaryChannel` and `ChanSpecConvToApple80211Channel` decode on 25G332 (center channel, control sideband, 0x1800 for 40 MHz, 0x2000 for 80 MHz). 160 MHz is reported as 80, the width the core joins at. Host test in `tests/chanspec_test.c` checks every case against Apple's decoder math.
+- The country code is the associated AP's Country element (802.11d) until macOS sets one, instead of XZ. Report only: the core's regulatory domain does not change.
+- The extended BSS info has the AP's HT RX MCS set (two streams) and the VHT MCS map both sides support, instead of "none".
+- `build.sh` skips the kernel-collection link check with `NO_LINKCHECK=1`.
+
 ## 0.4.14 (2026-10-28)
 
 - macOS 26.7.2 (25G332) is allow-listed ([#4](https://github.com/watchthelight-labs/mt7925-hackintosh-wifi/issues/4)). The kcabi dump of 25G332's boot kernel collection, taken from Apple's OTA, has the same instance sizes, vtables and 200 request slots as 25G241, and `genhdr.py` makes headers that differ only in the build name (`abi/25G332/`). Every undefined symbol of the kext is exported by the 25G332 collection. Of the functions Apple changed, only `kern_netif_queue_rx_enqueue` (a field moved from +0x4d8 to +0x4e8) touches the receive path, and the kext never calls it directly. Not yet booted on 25G332.
